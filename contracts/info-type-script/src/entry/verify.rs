@@ -119,10 +119,10 @@ pub fn liquidity_tx_verification() -> Result<(), Error> {
         || BigUint::from(info_out_data.sudt_reserve)
             != (BigUint::from(info_in_data.sudt_reserve) - pool_sudt_paid + sudt_collect)
         || BigUint::from(info_out_data.total_liquidity)
-            >= (BigUint::from(info_in_data.total_liquidity) * TEN_THOUSAND * 9985u128
+            >= (BigUint::from(info_in_data.total_liquidity) * TEN_THOUSAND * 9995u128
                 - BigUint::from(user_liquidity_burned)
-                    * 9985u128
-                    * 9985u128
+                    * 9995u128
+                    * 9995u128
                     * user_liquidity_burned
                 + BigUint::from(user_liquidity_mint) * TEN_THOUSAND * TEN_THOUSAND)
     {
@@ -218,7 +218,7 @@ fn verify_initial_mint(
     let user_liquidity = liquidity_sudt_data.sudt_amount;
     let mint_liquidity = (BigUint::from(sudt_injected) * ckb_injected).sqrt();
 
-    if BigUint::from(user_liquidity) * THOUSAND != mint_liquidity * 9985u128 {
+    if BigUint::from(user_liquidity) * THOUSAND != mint_liquidity * 9995u128 {
         return Err(Error::MintInitialLiquidityFailed);
     }
 
@@ -299,7 +299,7 @@ fn mint_liquidity(
         }
 
         if BigUint::from(user_liquidity) * TEN_THOUSAND * sudt_reserve
-            != BigUint::from(sudt_injected) * 9985u128 * total_liquidity
+            != BigUint::from(sudt_injected) * 9995u128 * total_liquidity
         {
             return Err(Error::LiquidityPoolTokenDiff);
         }
@@ -327,7 +327,7 @@ fn mint_liquidity(
         }
 
         if BigUint::from(user_liquidity) * TEN_THOUSAND * ckb_reserve
-            != BigUint::from(ckb_injected) * 9985u128 * total_liquidity
+            != BigUint::from(ckb_injected) * 9995u128 * total_liquidity
         {
             return Err(Error::LiquidityPoolTokenDiff);
         }
@@ -383,9 +383,9 @@ fn burn_liquidity(
     }
 
     if BigUint::from(user_ckb_got) * TEN_THOUSAND * total_liquidity
-        != BigUint::from(ckb_reserve) * 9985u128 * burned_liquidity
+        != BigUint::from(ckb_reserve) * 9995u128 * burned_liquidity
         || BigUint::from(user_sudt_got) * TEN_THOUSAND * total_liquidity
-            != BigUint::from(sudt_reserve) * 9985u128 * burned_liquidity
+            != BigUint::from(sudt_reserve) * 9995u128 * burned_liquidity
     {
         return Err(Error::LiquidityPoolTokenDiff);
     }
