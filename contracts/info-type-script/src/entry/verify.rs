@@ -10,13 +10,13 @@ use share::ckb_std::{
     ckb_constants::Source,
     ckb_types::{packed::CellOutput, prelude::*},
     // debug,
-    high_level::{load_cell, load_cell_data, QueryIter},
+    high_level::{load_cell, load_cell_data, load_cell_lock_hash, QueryIter},
 };
 use share::{decode_u128, get_cell_type_hash};
 
 use crate::error::Error;
 
-const INFO_VERSION: u8 = 0;
+const INFO_VERSION: u8 = 1;
 
 const THOUSAND: u128 = 1_000;
 const TEN_THOUSAND: u128 = 10_000;
@@ -24,7 +24,6 @@ const SUDT_CAPACITY: u64 = 15_400_000_000;
 const INFO_CAPACITY: u64 = 21_400_000_000;
 
 pub fn liquidity_tx_verification() -> Result<(), Error> {
-    let info_in_cell = load_cell(0, Source::Input)?;
     let info_in_data = InfoCellData::from_raw(&load_cell_data(0, Source::Input)?)?;
     let pool_in_cell = load_cell(1, Source::Input)?;
     let info_out_cell = load_cell(0, Source::Output)?;
@@ -34,8 +33,7 @@ pub fn liquidity_tx_verification() -> Result<(), Error> {
 
     let mut liquidity_sudt_type_hash = [0u8; 20];
     liquidity_sudt_type_hash.copy_from_slice(&info_in_data.liquidity_sudt_type_hash);
-    let mut pool_type_hash = [0u8; 32];
-    pool_type_hash.copy_from_slice(&get_cell_type_hash(&pool_in_cell)?.unpack()[0..20]);
+    let pool_type_hash = get_cell_type_hash!(1, Source::Input);
 
     let ckb_reserve = info_in_data.ckb_reserve;
     let sudt_reserve = info_in_data.sudt_reserve;
@@ -60,9 +58,12 @@ pub fn liquidity_tx_verification() -> Result<(), Error> {
             return Err(Error::VersionDiff);
         }
 
+        // Todo: fix me
         let liquidity_order_data = SUDTAmountData::from_raw(&raw_data)?;
-        let liquidity_code_hash = &liquidity_order_cell.lock().args().as_bytes()[41..61];
-        if liquidity_code_hash != &get_cell_type_hash(&info_in_cell)?.unpack()[0..20] {
+        let liquidity_type_hash = get_cell_type_hash!(idx, Source::Input);
+        if liquidity_order_lock_args.info_type_hash.as_ref()
+            != &get_cell_type_hash!(0, Source::Input)[0..20]
+        {
             return Err(Error::InvalidLiquidityCell);
         }
 
@@ -79,12 +80,11 @@ pub fn liquidity_tx_verification() -> Result<(), Error> {
             }
         }
 
-        if liquidity_code_hash[0..20] == info_in_data.liquidity_sudt_type_hash {
+        if liquidity_type_hash[0..20] == info_in_data.liquidity_sudt_type_hash {
             burn_liquidity(
                 idx,
                 &liquidity_order_cell,
                 liquidity_order_data.sudt_amount,
-                &pool_in_cell,
                 ckb_reserve,
                 sudt_reserve,
                 total_liquidity,
@@ -93,12 +93,11 @@ pub fn liquidity_tx_verification() -> Result<(), Error> {
                 &mut user_liquidity_burned,
             )?;
             base_index = idx;
-        } else if liquidity_code_hash[0..20] == pool_type_hash[0..20] {
+        } else if liquidity_type_hash[0..20] == pool_type_hash[0..20] {
             mint_liquidity(
                 base_index,
                 idx,
                 &info_in_data,
-                &pool_in_cell,
                 &liquidity_order_cell,
                 liquidity_order_data.sudt_amount,
                 ckb_reserve,
@@ -142,11 +141,11 @@ pub fn liquidity_tx_verification() -> Result<(), Error> {
 
 pub fn swap_tx_verification() -> Result<(), Error> {
     let info_in_data = InfoCellData::from_raw(&load_cell_data(0, Source::Input)?)?;
-    let pool_in_cell = load_cell(1, Source::GroupInput)?;
+    let pool_in_cell = load_cell(1, Source::Input)?;
     let pool_in_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Input)?)?;
     let info_out_cell = load_cell(0, Source::Output)?;
     let info_out_data = InfoCellData::from_raw(&load_cell_data(0, Source::Output)?)?;
-    let pool_out_cell = load_cell(1, Source::GroupOutput)?;
+    let pool_out_cell = load_cell(1, Source::Output)?;
     let pool_out_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Output)?)?;
 
     if info_out_cell.capacity().unpack() != INFO_CAPACITY
@@ -176,14 +175,15 @@ pub fn swap_tx_verification() -> Result<(), Error> {
         {
             return Err(Error::SellSUDTFailed);
         }
+    } else {
+        return Err(Error::InvalidInfoData);
     }
 
-    if BigUint::from(pool_out_cell.capacity().unpack() as u128)
-        != (pool_in_cell.capacity().unpack() as u128) + ckb_got.to_biguint().unwrap()
-        || BigUint::from(pool_out_data.sudt_amount)
-            != pool_in_data.sudt_amount + sudt_got.to_biguint().unwrap()
+    if BigInt::from(pool_out_cell.capacity().unpack()) != pool_in_cell.capacity().unpack() + ckb_got
     {
-        return Err(Error::AmountDiff);
+        return Err(Error::CKBGotAmountDiff);
+    } else if BigInt::from(pool_out_data.sudt_amount) != pool_in_data.sudt_amount + sudt_got {
+        return Err(Error::SUDTGotAmountDiff);
     }
 
     Ok(())
@@ -203,12 +203,13 @@ fn verify_initial_mint(
     }
 
     let order_cell = load_cell(3, Source::Input)?;
+    let order_lock_args = LiquidityOrderLockArgs::from_raw(order_cell.lock().args().as_slice())?;
     let order_data = SUDTAmountData::from_raw(&load_cell_data(3, Source::Input)?)?;
-    let liquidity_cell = load_cell(3, Source::Output)?;
     let liquidity_sudt_data = SUDTAmountData::from_raw(&load_cell_data(3, Source::Output)?)?;
 
-    if get_cell_type_hash(&liquidity_cell)?.unpack()[0..20] != info_in_data.liquidity_sudt_type_hash
-        || liquidity_cell.lock().code_hash().as_slice() != order_cell.lock().code_hash().as_slice()
+    if get_cell_type_hash!(3, Source::Output)[0..20] != info_in_data.liquidity_sudt_type_hash
+        || load_cell_lock_hash(3, Source::Output)?.as_ref()
+            != order_lock_args.user_lock_hash.as_ref()
     {
         return Err(Error::InvalidLiquidityCell);
     }
@@ -232,7 +233,6 @@ fn mint_liquidity(
     base_index: usize,
     liquidity_cell_index: usize,
     info_in_data: &InfoCellData,
-    pool_in_cell: &CellOutput,
     liquidity_order_cell: &CellOutput,
     liquidity_order_data: u128,
     ckb_reserve: u128,
@@ -247,37 +247,31 @@ fn mint_liquidity(
     }
 
     let relative_index = liquidity_cell_index - base_index;
-    let liquidity_cell = load_cell(relative_index * 2 + base_index, Source::Output)?;
+    let liquidity_index = relative_index * 2 + base_index;
+    let liquidity_cell = load_cell(liquidity_index, Source::Output)?;
     let liquidity_order_lock_args =
         LiquidityOrderLockArgs::from_raw(liquidity_order_cell.lock().args().as_slice())?;
-    let change_cell = load_cell(relative_index * 2 + base_index + 1, Source::Output)?;
+    let change_cell = load_cell(liquidity_index + 1, Source::Output)?;
+    let change_lock_hash = load_cell_lock_hash(liquidity_index + 1, Source::Output)?;
 
-    if get_cell_type_hash(&liquidity_cell)?.unpack()[0..20] != info_in_data.liquidity_sudt_type_hash
-        || liquidity_cell.lock().code_hash().as_slice()
+    if get_cell_type_hash!(liquidity_index, Source::Output)[0..20]
+        != info_in_data.liquidity_sudt_type_hash
+        || load_cell_lock_hash(liquidity_index, Source::Output)?.as_ref()
             != liquidity_order_lock_args.user_lock_hash.as_ref()
     {
         return Err(Error::InvalidLiquidityCell);
     }
 
-    let user_liquidity = SUDTAmountData::from_raw(&load_cell_data(
-        relative_index * 2 + base_index,
-        Source::Output,
-    )?)?
-    .sudt_amount;
-    let min_liquidity_got = liquidity_order_lock_args.amount_1;
-
-    if user_liquidity < min_liquidity_got {
-        return Err(Error::LackLiquidity);
-    }
+    let user_liquidity =
+        SUDTAmountData::from_raw(&load_cell_data(liquidity_index, Source::Output)?)?.sudt_amount;
 
     let ckb_injected: u128;
     let sudt_injected: u128;
-    let change_data = load_cell_data(relative_index * 2 + base_index + 1, Source::Output)?;
+    let change_data = load_cell_data(liquidity_index + 1, Source::Output)?;
 
     if change_data.is_empty() {
         if change_cell.type_().is_none()
-            || change_cell.lock().code_hash().as_slice()
-                != liquidity_order_lock_args.user_lock_hash.as_ref()
+            || change_lock_hash.as_ref() != liquidity_order_lock_args.user_lock_hash.as_ref()
         {
             return Err(Error::InvalidChangeCell);
         }
@@ -304,10 +298,9 @@ fn mint_liquidity(
             return Err(Error::LiquidityPoolTokenDiff);
         }
     } else if change_data.len() >= 16 {
-        if get_cell_type_hash(&change_cell)?.as_slice()
-            != get_cell_type_hash(&pool_in_cell)?.as_slice()
-            || change_cell.lock().code_hash().as_slice()
-                != liquidity_order_lock_args.user_lock_hash.as_ref()
+        if get_cell_type_hash!(liquidity_index + 1, Source::Output)
+            != get_cell_type_hash!(1, Source::Input)
+            || change_lock_hash.as_ref() != liquidity_order_lock_args.user_lock_hash.as_ref()
         {
             return Err(Error::InvalidChangeCell);
         }
@@ -346,7 +339,6 @@ fn burn_liquidity(
     index: usize,
     liquidity_order_cell: &CellOutput,
     liquidity_order_data: u128,
-    pool_in_cell: &CellOutput,
     ckb_reserve: u128,
     sudt_reserve: u128,
     total_liquidity: u128,
@@ -364,9 +356,9 @@ fn burn_liquidity(
         LiquidityOrderLockArgs::from_raw(liquidity_order_cell.lock().args().as_slice())?;
 
     if ckb_sudt_data.len() < 16
-        || get_cell_type_hash(&ckb_sudt_out)?.unpack()
-            != get_cell_type_hash(&pool_in_cell)?.unpack()
-        || ckb_sudt_out.lock().code_hash().as_slice() != liquidity_lock_args.user_lock_hash.as_ref()
+        || get_cell_type_hash!(index, Source::Output) != get_cell_type_hash!(1, Source::Input)
+        || load_cell_lock_hash(index, Source::Output)?.as_ref()
+            != liquidity_lock_args.user_lock_hash.as_ref()
     {
         return Err(Error::InvalidLiquidityCell);
     }

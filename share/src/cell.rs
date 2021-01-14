@@ -14,8 +14,8 @@ const SUDT_AMOUNT_DATA_LEN: usize = 16;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum OrderKind {
-    Sell,
-    Buy,
+    SellCKB,
+    BuyCKB,
 }
 
 impl TryFrom<u8> for OrderKind {
@@ -23,8 +23,8 @@ impl TryFrom<u8> for OrderKind {
 
     fn try_from(input: u8) -> Result<OrderKind, Error> {
         match input {
-            0 => Ok(OrderKind::Sell),
-            1 => Ok(OrderKind::Buy),
+            0 => Ok(OrderKind::SellCKB),
+            1 => Ok(OrderKind::BuyCKB),
             _ => Err(Error::Encoding),
         }
     }
@@ -33,8 +33,8 @@ impl TryFrom<u8> for OrderKind {
 impl Into<u8> for OrderKind {
     fn into(self) -> u8 {
         match self {
-            OrderKind::Sell => 0,
-            OrderKind::Buy => 1,
+            OrderKind::SellCKB => 0,
+            OrderKind::BuyCKB => 1,
         }
     }
 }

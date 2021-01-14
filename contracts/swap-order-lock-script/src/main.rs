@@ -20,7 +20,9 @@ use share::ckb_std::{
     ckb_constants::Source,
     ckb_types::prelude::*,
     default_alloc,
-    high_level::{load_cell, load_cell_data, load_script, load_witness_args, QueryIter},
+    high_level::{
+        load_cell, load_cell_data, load_cell_lock_hash, load_script, load_witness_args, QueryIter,
+    },
 };
 use share::{ckb_std, decode_u128, get_cell_type_hash};
 
@@ -44,8 +46,8 @@ fn main() -> Result<(), Error> {
     let script = load_script()?;
     let lock_args = SwapOrderLockArgs::from_raw(script.args().as_slice())?;
 
-    for (idx, cell) in QueryIter::new(load_cell, Source::Input).enumerate() {
-        if cell.lock().code_hash().as_slice() == lock_args.user_lock_hash.as_ref() {
+    for (idx, lock_hash) in QueryIter::new(load_cell_lock_hash, Source::Input).enumerate() {
+        if lock_hash.as_ref() == lock_args.user_lock_hash.as_ref() {
             let witness = load_witness_args(idx, Source::Input)?;
             if witness.total_size() != 0 {
                 return Ok(());
@@ -62,12 +64,13 @@ fn main() -> Result<(), Error> {
         }
     }
 
-    let pool_cell = load_cell(1, Source::Input)?;
     let order_cell = load_cell(index, Source::Input)?;
     let output_cell = load_cell(index, Source::Output)?;
     let order_lock_args = SwapOrderLockArgs::from_raw(&load_cell_data(index, Source::Input)?)?;
 
-    if output_cell.lock().code_hash().as_slice() != order_lock_args.user_lock_hash.as_ref() {
+    if load_cell_lock_hash(index, Source::Output)?.as_ref()
+        != order_lock_args.user_lock_hash.as_ref()
+    {
         return Err(Error::InvalidOutputLockHash);
     }
 
@@ -75,10 +78,8 @@ fn main() -> Result<(), Error> {
         return Err(Error::InvalidAmountIn);
     }
 
-    if order_lock_args.kind == OrderKind::Sell {
-        if get_cell_type_hash(&output_cell)?.as_slice()
-            != get_cell_type_hash(&pool_cell)?.as_slice()
-        {
+    if order_lock_args.kind == OrderKind::SellCKB {
+        if get_cell_type_hash!(index, Source::Output) != get_cell_type_hash!(1, Source::Input) {
             return Err(Error::InvalidOutputTypeHash);
         }
 

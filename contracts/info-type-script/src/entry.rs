@@ -15,10 +15,7 @@ use share::ckb_std::{
     },
     default_alloc,
     // debug,
-    high_level::{
-        load_cell, load_cell_data, load_cell_lock_hash, load_cell_type_hash, load_script_hash,
-        QueryIter,
-    },
+    high_level::{load_cell, load_cell_data, load_cell_lock_hash, load_script, QueryIter},
 };
 use share::{blake2b, get_cell_type_hash};
 use type_id::verify_type_id;
@@ -36,38 +33,45 @@ lazy_static::lazy_static! {
 default_alloc!(4 * 1024, 2048 * 1024, 64);
 
 pub fn main() -> Result<(), Error> {
-    verify_type_id()?;
+    let info_type_code_hash = load_script()?.code_hash().unpack();
+    verify_info_creation(&load_cell(0, Source::Output)?, info_type_code_hash)?;
+
+    if QueryIter::new(load_cell, Source::Input).count() == 2 {
+        return Ok(());
+    }
 
     let info_in_data = InfoCellData::from_raw(&load_cell_data(0, Source::Input)?)?;
     let pool_in_cell = load_cell(1, Source::Input)?;
     let pool_in_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Input)?)?;
-    let info_out_cell = load_cell(0, Source::Output)?;
-    let pool_out_cell = load_cell(1, Source::Output)?;
-    let info_type_code_hash = load_script_hash()?;
 
-    verify_info_creation(&info_out_cell, &pool_out_cell, info_type_code_hash)?;
+    let input_info_cell_count = QueryIter::new(load_cell, Source::Input)
+        .filter(|cell| {
+            cell.type_().to_opt().map_or_else(
+                || false,
+                |script| script.code_hash().unpack() == info_type_code_hash,
+            )
+        })
+        .count();
+    let output_info_cell_count = QueryIter::new(load_cell, Source::Output)
+        .filter(|cell| {
+            cell.type_().to_opt().map_or_else(
+                || false,
+                |script| script.code_hash().unpack() == info_type_code_hash,
+            )
+        })
+        .count();
 
-    if QueryIter::new(load_cell_type_hash, Source::Input)
-        .filter(|hash| hash == &Some(info_type_code_hash))
-        .count()
-        != 1
-        || QueryIter::new(load_cell_type_hash, Source::Output)
-            .filter(|hash| hash == &Some(info_type_code_hash))
-            .count()
-            != 1
-    {
-        return Err(Error::OnlyOneLiquidityPool);
+    if input_info_cell_count != 1 || output_info_cell_count != 1 {
+        return Err(Error::MoreThanOneLiquidityPool);
     }
 
-    if (pool_in_cell.capacity().unpack() as u128) != POOL_BASE_CAPACITY + info_in_data.ckb_reserve
-        || pool_in_data.sudt_amount != info_in_data.sudt_reserve
-    {
-        return Err(Error::AmountDiff);
+    if (pool_in_cell.capacity().unpack() as u128) != POOL_BASE_CAPACITY + info_in_data.ckb_reserve {
+        return Err(Error::CKBReserveAmountDiff);
+    } else if pool_in_data.sudt_amount != info_in_data.sudt_reserve {
+        return Err(Error::SUDTReserveAmountDiff);
     }
 
-    if get_cell_type_hash(&load_cell(3, Source::Input)?)?.unpack()[0..20]
-        == info_in_data.liquidity_sudt_type_hash
-    {
+    if get_cell_type_hash!(3, Source::Input)[0..20] == info_in_data.liquidity_sudt_type_hash {
         verify::liquidity_tx_verification()?;
     } else {
         verify::swap_tx_verification()?;
@@ -78,26 +82,30 @@ pub fn main() -> Result<(), Error> {
 
 pub fn verify_info_creation(
     info_out_cell: &CellOutput,
-    pool_out_cell: &CellOutput,
     info_type_code_hash: [u8; 32],
 ) -> Result<(), Error> {
-    if QueryIter::new(load_cell_type_hash, Source::Input)
-        .filter(|hash| hash == &Some(info_type_code_hash))
-        .count()
-        == 0
-    {
-        let info_out_lock_args: Vec<u8> = info_out_cell.lock().args().unpack();
+    verify_type_id()?;
 
-        if QueryIter::new(load_cell_lock_hash, Source::Output)
-            .filter(|hash| hash == &INFO_LOCK_CODE_HASH)
+    let input_info_cell_count = QueryIter::new(load_cell, Source::Input)
+        .filter(|cell| {
+            cell.type_()
+                .to_opt()
+                .map_or_else(|| false, |s| s.code_hash().unpack() == info_type_code_hash)
+        })
+        .count();
+    if input_info_cell_count == 0 {
+        let info_out_lock_args: Vec<u8> = info_out_cell.lock().args().unpack();
+        let pool_type_hash = get_cell_type_hash!(1, Source::Output);
+
+        if QueryIter::new(load_cell, Source::Output)
+            .filter(|cell| cell.lock().code_hash().unpack() == INFO_LOCK_CODE_HASH)
             .count()
             != 2
             || info_out_cell.lock().hash_type() != *HASH_TYPE_DATA
-            || info_out_lock_args[0..20]
-                != blake2b!("ckb", get_cell_type_hash(&pool_out_cell)?.unpack())[0..20]
-            || info_out_lock_args[20..40] != get_cell_type_hash(&info_out_cell)?.unpack()[0..20]
-            || info_out_cell.lock().code_hash().as_slice()
-                != pool_out_cell.lock().code_hash().as_slice()
+            || info_out_lock_args[0..20] != blake2b!("ckb", pool_type_hash)[0..20]
+            || info_out_lock_args[20..40] != get_cell_type_hash!(0, Source::Output)[0..20]
+            || load_cell_lock_hash(0, Source::Output)? != load_cell_lock_hash(1, Source::Output)?
+            || load_cell_data(1, Source::Output)?.len() as u128 != POOL_BASE_CAPACITY
         {
             return Err(Error::InfoCreationError);
         }

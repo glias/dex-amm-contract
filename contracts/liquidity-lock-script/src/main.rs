@@ -18,7 +18,7 @@ use share::ckb_std::{
     ckb_constants::Source,
     ckb_types::prelude::*,
     default_alloc,
-    high_level::{load_cell, load_cell_lock_hash, load_script, load_witness_args, QueryIter},
+    high_level::{load_cell_lock_hash, load_script, load_witness_args, QueryIter},
 };
 use share::{ckb_std, get_cell_type_hash};
 
@@ -38,18 +38,17 @@ fn program_entry() -> i8 {
 }
 
 fn main() -> Result<(), Error> {
-    let self_hash = load_script()?.code_hash();
+    let self_hash = load_script()?.args();
 
     for (idx, lock_hash) in QueryIter::new(load_cell_lock_hash, Source::Input).enumerate() {
-        if lock_hash == self_hash.as_slice()
+        if lock_hash == self_hash.as_slice()[0..32]
             && load_witness_args(idx, Source::Input)?.total_size() != 0
         {
             return Ok(());
         }
     }
 
-    let type_hash = get_cell_type_hash(&load_cell(0, Source::Input)?)?;
-    if type_hash.as_slice()[..20] == load_script()?.args().as_slice()[65..85] {
+    if get_cell_type_hash!(0, Source::Input) == load_script()?.args().as_slice()[65..85] {
         return Ok(());
     }
 

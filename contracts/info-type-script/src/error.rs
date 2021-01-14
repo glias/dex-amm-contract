@@ -10,8 +10,8 @@ pub enum Error {
     LengthNotEnough,
     Encoding,
     MissingTypeScript = 5,
-    OnlyOneLiquidityPool,
-    AmountDiff,
+    MoreThanOneLiquidityPool,
+    MintInitialLiquidityFailed,
     InfoCreationError,
     InvalidTypeID,
     VersionDiff = 10,
@@ -24,10 +24,12 @@ pub enum Error {
     LiquidityPoolTokenDiff,
     InvalidInitialLiquidityTx,
     BurnLiquidityFailed,
-    LackLiquidity = 20,
-    InvalidFee,
+    InvalidFee = 20,
     InvalidCKBAmount,
-    MintInitialLiquidityFailed,
+    CKBReserveAmountDiff,
+    SUDTReserveAmountDiff,
+    CKBGotAmountDiff,
+    SUDTGotAmountDiff = 25,
 }
 
 impl From<SysError> for Error {

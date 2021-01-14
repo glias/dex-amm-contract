@@ -10,11 +10,7 @@ pub mod cell;
 pub mod error;
 pub mod hash;
 
-use ckb_std::{
-    ckb_types::packed::{Byte32, CellOutput},
-    error::SysError,
-};
-use error::HelperError;
+use ckb_std::error::SysError;
 
 #[macro_export]
 macro_rules! blake2b {
@@ -29,12 +25,12 @@ macro_rules! blake2b {
     }}
 }
 
-pub fn get_cell_type_hash(cell: &CellOutput) -> Result<Byte32, HelperError> {
-    let script = cell
-        .type_()
-        .to_opt()
-        .ok_or(HelperError::MissingTypeScript)?;
-    Ok(script.code_hash())
+#[macro_export]
+macro_rules! get_cell_type_hash {
+    ($index: expr, $source: expr) => {
+        share::ckb_std::high_level::load_cell_type_hash($index, $source)?
+            .ok_or_else(|| share::error::HelperError::MissingTypeScript)?
+    };
 }
 
 pub fn check_args_len(expected: usize, actual: usize) -> Result<(), SysError> {

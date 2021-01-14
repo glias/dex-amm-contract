@@ -45,14 +45,12 @@ fn main() -> Result<(), Error> {
         return Err(Error::InvalidInfoLock);
     }
 
-    let info = load_cell(0, Source::Input)?;
-    let pool = load_cell(1, Source::Input)?;
-    let pool_type_hash = get_cell_type_hash(&pool)?;
+    let pool_type_hash = get_cell_type_hash!(1, Source::Input);
     let self_args = load_script()?.args();
-    let hash = blake2b!("ckb", pool_type_hash.unpack());
+    let hash = blake2b!("ckb", pool_type_hash);
 
     if hash[0..20] != self_args.as_slice()[0..20]
-        || get_cell_type_hash(&info)?.as_slice()[0..20] != self_args.as_slice()[20..40]
+        || get_cell_type_hash!(0, Source::Input)[0..20] != self_args.as_slice()[20..40]
     {
         return Err(Error::InvalidInfoLock);
     }
