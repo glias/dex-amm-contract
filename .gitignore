@@ -8,5 +8,6 @@
 /build/*
 
 /migrations/*
+/test/src/schema/generated/*
 
 !.gitkeep

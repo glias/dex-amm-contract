@@ -4,7 +4,10 @@ members = [
     "contracts/liquidity-lock-script",
     "contracts/info-lock-script",
     "contracts/info-type-script",
-    "share"
+    "dynamic-loading",
+    "share",
+    "test",
+    "natives"
 ]
 
 [profile.release]
