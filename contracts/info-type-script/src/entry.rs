@@ -22,12 +22,11 @@ use type_id::verify_type_id;
 
 use crate::error::Error;
 
-const INFO_LOCK_CODE_HASH: [u8; 32] = [2u8; 32];
+// const INFO_LOCK_CODE_HASH: [u8; 32] = [2u8; 32];
 const POOL_BASE_CAPACITY: u128 = 16_200_000_000;
 
-lazy_static::lazy_static! {
-    static ref HASH_TYPE_DATA: Byte = Byte::new(1u8);
-}
+pub static INFO_LOCK_CODE_HASH: &str =
+    include!(concat!(env!("OUT_DIR"), "/info_lock_code_hash.rs"));
 
 // Alloc 4K fast HEAP + 2M HEAP to receives PrefilledData
 default_alloc!(4 * 1024, 2048 * 1024, 64);
@@ -36,7 +35,7 @@ pub fn main() -> Result<(), Error> {
     let info_type_code_hash = load_script()?.code_hash().unpack();
     verify_info_creation(&load_cell(0, Source::Output)?, info_type_code_hash)?;
 
-    if QueryIter::new(load_cell, Source::Input).count() == 2 {
+    if QueryIter::new(load_cell, Source::Output).count() == 2 {
         return Ok(());
     }
 
@@ -98,10 +97,13 @@ pub fn verify_info_creation(
         let pool_type_hash = get_cell_type_hash!(1, Source::Output);
 
         if QueryIter::new(load_cell, Source::Output)
-            .filter(|cell| cell.lock().code_hash().unpack() == INFO_LOCK_CODE_HASH)
+            .filter(|cell| {
+                cell.lock().code_hash().unpack().as_ref()
+                    == hex::decode(INFO_LOCK_CODE_HASH).unwrap()
+            })
             .count()
             != 2
-            || info_out_cell.lock().hash_type() != *HASH_TYPE_DATA
+            || info_out_cell.lock().hash_type() != HashType::Data.into()
             || info_out_lock_args[0..20] != blake2b!("ckb", pool_type_hash)[0..20]
             || info_out_lock_args[20..40] != get_cell_type_hash!(0, Source::Output)[0..20]
             || load_cell_lock_hash(0, Source::Output)? != load_cell_lock_hash(1, Source::Output)?
@@ -112,4 +114,19 @@ pub fn verify_info_creation(
     }
 
     Ok(())
+}
+
+#[allow(dead_code)]
+enum HashType {
+    Data,
+    Code,
+}
+
+impl Into<Byte> for HashType {
+    fn into(self) -> Byte {
+        match self {
+            HashType::Data => Byte::new(1u8),
+            HashType::Code => Byte::new(2u8),
+        }
+    }
 }

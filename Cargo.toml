@@ -2,8 +2,8 @@
 members = [
     "contracts/swap-order-lock-script",
     "contracts/liquidity-lock-script",
-    "contracts/info-type-script",
     "contracts/info-lock-script",
+    "contracts/info-type-script",
     "share"
 ]
 

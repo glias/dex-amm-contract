@@ -19,10 +19,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ff9f338986406db85e2b5deb40a9255b796ca03a194c7457403d215173f3fd5"
 
 [[package]]
-name = "cc"
-version = "1.0.41"
+name = "bytes"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8dae9c4b8fedcae85592ba623c4fd08cfdab3e3b72d6df780c6ead964a69bfff"
+checksum = "b700ce4376041dcd0a327fd0097c41095743c4c8af8887265942faf1100bd040"
+
+[[package]]
+name = "cc"
+version = "1.0.66"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c0496836a84f8d0495758516b8621a622beb77c0fed418570e50764093ced48"
 
 [[package]]
 name = "cfg-if"
@@ -52,6 +58,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hex"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "644f9158b2f133fd50f5fb3242878846d9eb792e445c893805ff0e3824006e35"
+
+[[package]]
 name = "info-lock-script"
 version = "0.1.0"
 dependencies = [
@@ -62,19 +74,12 @@ dependencies = [
 name = "info-type-script"
 version = "0.1.0"
 dependencies = [
- "lazy_static",
+ "blake2b-ref",
+ "bytes",
+ "hex",
  "num-bigint",
  "num-traits",
  "share",
-]
-
-[[package]]
-name = "lazy_static"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
-dependencies = [
- "spin",
 ]
 
 [[package]]
@@ -86,9 +91,9 @@ dependencies = [
 
 [[package]]
 name = "molecule"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "663f76cc52219e5957e2f5563cce9d89f98aa8503c9c898b5c412d97df663998"
+checksum = "3067ceba3d7f5dcc7427cfc584fc506e756f1161151032fec840455f5a3c2fd5"
 dependencies = [
  "cfg-if",
 ]
@@ -131,12 +136,6 @@ dependencies = [
  "ckb-std",
  "molecule",
 ]
-
-[[package]]
-name = "spin"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "swap-order-lock-script"
