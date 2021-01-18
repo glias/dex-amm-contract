@@ -15,6 +15,7 @@ pub enum Error {
     InvalidAmountIn,
     InvalidCapacity,
     InvalidOutputData = 10,
+    SwapAmountLessThanMin,
 }
 
 impl From<SysError> for Error {

@@ -95,14 +95,14 @@ pub fn verify_info_creation(
     if input_info_cell_count == 0 {
         let info_out_lock_args: Vec<u8> = info_out_cell.lock().args().unpack();
         let pool_type_hash = get_cell_type_hash!(1, Source::Output);
-
-        if QueryIter::new(load_cell, Source::Output)
+        let output_info_cell_count = QueryIter::new(load_cell, Source::Output)
             .filter(|cell| {
                 cell.lock().code_hash().unpack().as_ref()
                     == hex::decode(INFO_LOCK_CODE_HASH).unwrap()
             })
-            .count()
-            != 2
+            .count();
+
+        if output_info_cell_count != 2
             || info_out_cell.lock().hash_type() != HashType::Data.into()
             || info_out_lock_args[0..20] != blake2b!("ckb", pool_type_hash)[0..20]
             || info_out_lock_args[20..40] != get_cell_type_hash!(0, Source::Output)[0..20]

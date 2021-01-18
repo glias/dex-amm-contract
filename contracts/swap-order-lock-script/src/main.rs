@@ -91,7 +91,7 @@ fn main() -> Result<(), Error> {
         }
 
         if decode_u128(&load_cell_data(index, Source::Output)?)? < order_lock_args.min_amount_out {
-            return Err(Error::InvalidOutputData);
+            return Err(Error::SwapAmountLessThanMin);
         }
     } else {
         if output_cell.type_().is_some() {
