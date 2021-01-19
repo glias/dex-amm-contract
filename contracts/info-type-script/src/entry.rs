@@ -33,9 +33,11 @@ default_alloc!(4 * 1024, 2048 * 1024, 64);
 
 pub fn main() -> Result<(), Error> {
     let info_type_code_hash = load_script()?.code_hash().unpack();
-    verify_info_creation(&load_cell(0, Source::Output)?, info_type_code_hash)?;
 
-    if QueryIter::new(load_cell, Source::Output).count() == 2 {
+    if QueryIter::new(load_cell, Source::Input).count() == 1
+        && QueryIter::new(load_cell, Source::Output).count() == 2
+    {
+        verify_info_creation(&load_cell(0, Source::Output)?, info_type_code_hash)?;
         return Ok(());
     }
 
@@ -107,7 +109,7 @@ pub fn verify_info_creation(
             || info_out_lock_args[0..20] != blake2b!("ckb", pool_type_hash)[0..20]
             || info_out_lock_args[20..40] != get_cell_type_hash!(0, Source::Output)[0..20]
             || load_cell_lock_hash(0, Source::Output)? != load_cell_lock_hash(1, Source::Output)?
-            || load_cell_data(1, Source::Output)?.len() as u128 != POOL_BASE_CAPACITY
+            || load_cell_data(1, Source::Output)?.len() < 16
         {
             return Err(Error::InfoCreationError);
         }
