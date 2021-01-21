@@ -114,14 +114,21 @@ pub fn liquidity_tx_verification() -> Result<(), Error> {
     if info_out_cell.capacity().unpack() != INFO_CAPACITY
         || BigUint::from(info_out_data.ckb_reserve)
             != (BigUint::from(info_in_data.ckb_reserve) - pool_ckb_paid + ckb_collect)
-        || BigUint::from(info_out_data.sudt_reserve)
-            != (BigUint::from(info_in_data.sudt_reserve) - pool_sudt_paid + sudt_collect)
-        || BigUint::from(info_out_data.total_liquidity)
-            >= (BigUint::from(info_in_data.total_liquidity)
-                - BigUint::from(user_liquidity_burned) * user_liquidity_burned
-                + BigUint::from(user_liquidity_mint))
     {
-        return Err(Error::InvalidFee);
+        return Err(Error::InvalidCKBReserve);
+    }
+
+    if BigUint::from(info_out_data.sudt_reserve)
+        != (BigUint::from(info_in_data.sudt_reserve) - pool_sudt_paid + sudt_collect)
+    {
+        return Err(Error::InvalidSUDTReserve);
+    }
+
+    if BigUint::from(info_out_data.total_liquidity)
+        >= (BigUint::from(info_in_data.total_liquidity) - user_liquidity_burned
+            + user_liquidity_mint)
+    {
+        return Err(Error::InvalidTotalLiquidity);
     }
 
     if (pool_out_cell.capacity().unpack() as u128)

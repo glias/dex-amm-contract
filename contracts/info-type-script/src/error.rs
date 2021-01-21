@@ -24,12 +24,14 @@ pub enum Error {
     LiquidityPoolTokenDiff,
     InvalidInitialLiquidityTx,
     BurnLiquidityFailed,
-    InvalidFee = 20,
+    SUDTGotAmountDiff = 20,
     InvalidCKBAmount,
     CKBReserveAmountDiff,
     SUDTReserveAmountDiff,
     CKBGotAmountDiff,
-    SUDTGotAmountDiff = 25,
+    InvalidCKBReserve = 25,
+    InvalidSUDTReserve,
+    InvalidTotalLiquidity,
 }
 
 impl From<SysError> for Error {

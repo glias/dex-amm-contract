@@ -87,6 +87,8 @@ pub fn verify_info_creation(
 ) -> Result<(), Error> {
     verify_type_id()?;
 
+    let input_cell_count = QueryIter::new(load_cell, Source::Input).count();
+    let output_cell_count = QueryIter::new(load_cell, Source::Output).count();
     let input_info_cell_count = QueryIter::new(load_cell, Source::Input)
         .filter(|cell| {
             cell.type_()
@@ -94,7 +96,8 @@ pub fn verify_info_creation(
                 .map_or_else(|| false, |s| s.code_hash().unpack() == info_type_code_hash)
         })
         .count();
-    if input_info_cell_count == 0 {
+
+    if input_cell_count == 1 && output_cell_count == 2 && input_info_cell_count == 0 {
         let info_out_lock_args: Vec<u8> = info_out_cell.lock().args().unpack();
         let pool_type_hash = get_cell_type_hash!(1, Source::Output);
         let output_info_cell_count = QueryIter::new(load_cell, Source::Output)
@@ -113,6 +116,8 @@ pub fn verify_info_creation(
         {
             return Err(Error::InfoCreationError);
         }
+    } else {
+        return Err(Error::InfoCreationError);
     }
 
     Ok(())
