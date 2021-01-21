@@ -1,0 +1,8 @@
+import basic;
+
+struct InfoCellData {
+    ckb_reserve: Uint128,
+    sudt_reserve: Uint128,
+    total_liquidity: Uint128,
+    liquidity_sudt_type_hash: Byte32,
+}

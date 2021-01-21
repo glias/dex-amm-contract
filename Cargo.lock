@@ -175,6 +175,44 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ff9f338986406db85e2b5deb40a9255b796ca03a194c7457403d215173f3fd5"
 
 [[package]]
+name = "bumpalo"
+version = "3.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e8c087f005730276d1096a652e92a8bacee2e2472bcc9715a74d2bec38b5820"
+
+[[package]]
+name = "byte-tools"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3b5ca7a04898ad4bcd41c90c5285445ff5b791899bb1b0abdd2a2aa791211d7"
+
+[[package]]
+name = "byteorder"
+version = "1.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae44d1a3d5a19df61dd0c8beb138458ac2a53a7ac09eba97d55592540004306b"
+
+[[package]]
+name = "bytes"
+version = "0.4.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "206fdffcfa2df7cbe15601ef46c813fce0965eb3286db6b56c583b814b51c81c"
+dependencies = [
+ "byteorder",
+ "either",
+ "iovec",
+]
+
+[[package]]
+name = "bytes"
+version = "0.5.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e4cec68f03f32e44924783795810fa50a7035d8c8ebe78580ad7e6c703fba38"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "bytes"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -182,9 +220,12 @@ checksum = "b700ce4376041dcd0a327fd0097c41095743c4c8af8887265942faf1100bd040"
 
 [[package]]
 name = "cc"
-version = "1.0.66"
+version = "1.0.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c0496836a84f8d0495758516b8621a622beb77c0fed418570e50764093ced48"
+checksum = "8dae9c4b8fedcae85592ba623c4fd08cfdab3e3b72d6df780c6ead964a69bfff"
+dependencies = [
+ "rayon",
+]
 
 [[package]]
 name = "cfg-if"
@@ -246,14 +287,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "hex"
-version = "0.4.2"
+name = "ckb-async-runtime"
+version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "644f9158b2f133fd50f5fb3242878846d9eb792e445c893805ff0e3824006e35"
-
-[[package]]
-name = "info-lock-script"
-version = "0.1.0"
+checksum = "6bc49f7578388b937dd06ddc2c463937dc19d679aa91b265bef7d4c1bf6ea64d"
 dependencies = [
  "tokio 0.2.24",
 ]
@@ -299,17 +336,34 @@ version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7e75b1663db3cfc33c8ceeafff530789dbe6863b8b0ac5709e9cdfb48ad21e86"
 dependencies = [
- "blake2b-ref",
- "bytes",
- "hex",
- "num-bigint",
- "num-traits",
- "share",
+ "ckb-fixed-hash",
+ "failure",
+ "faster-hex 0.4.1",
+ "lazy_static",
+ "rand 0.6.5",
+ "secp256k1 0.17.2",
 ]
 
 [[package]]
-name = "liquidity-lock-script"
-version = "0.1.0"
+name = "ckb-dao"
+version = "0.37.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23b45d97d0dd3a43d5b47ba4ea5ae8a8b77c1de75b4492880cc8be196e1e66ae"
+dependencies = [
+ "byteorder",
+ "ckb-chain-spec",
+ "ckb-dao-utils",
+ "ckb-error",
+ "ckb-store",
+ "ckb-traits",
+ "ckb-types",
+]
+
+[[package]]
+name = "ckb-dao-utils"
+version = "0.37.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a18be0c7895191f8ad2b8fa0b5cd838cce9fbfb9bb25bfc273a28cdd79936bb0"
 dependencies = [
  "byteorder",
  "ckb-error",
@@ -319,10 +373,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "molecule"
-version = "0.6.1"
+name = "ckb-db"
+version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3067ceba3d7f5dcc7427cfc584fc506e756f1161151032fec840455f5a3c2fd5"
+checksum = "d310656c7c957d580f01234a8bc6fecbdb424ec8282333e8908d51a3ecfcbbd8"
 dependencies = [
  "ckb-app-config",
  "ckb-error",
@@ -339,7 +393,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3223eafc8a1a652a4bc83104d8dabed50f25fdb986465701300b94abd74f058d"
 dependencies = [
  "blake2b-rs 0.2.0",
+ "ckb-std 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ckb-tool",
  "faster-hex 0.4.1",
+ "includedir 0.6.0",
+ "includedir_codegen 0.6.0",
+ "phf 0.8.0",
+ "sha3",
 ]
 
 [[package]]
@@ -376,8 +436,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "swap-lock-script"
-version = "0.1.0"
+name = "ckb-fixed-hash-core"
+version = "0.37.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e29663e41aedddff7875ad0be8a57934da6ab7a942627713c9a4d34f1493196c"
+dependencies = [
+ "failure",
+ "faster-hex 0.4.1",
+ "serde",
+]
+
+[[package]]
+name = "ckb-fixed-hash-macros"
+version = "0.37.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab08726ca4fa3db89fbb730167bd8fdb0756dd0098b475fe95a811ed83becb7d"
 dependencies = [
  "ckb-fixed-hash-core",
  "proc-macro2 0.4.30",
@@ -507,9 +580,9 @@ checksum = "4f0a932cec00aa6880f97d6b72b523f14121cbc4e29ee9be4d85cf41c988a19e"
 dependencies = [
  "ckb-system-scripts",
  "ckb-types",
- "includedir",
- "includedir_codegen",
- "phf",
+ "includedir 0.5.0",
+ "includedir_codegen 0.5.0",
+ "phf 0.7.24",
  "serde",
  "tempfile",
  "walkdir",
@@ -637,9 +710,9 @@ checksum = "261dd95a93c09ea24397c85b4fbca061e1da2d6573189749aeb99fe840aaf0c9"
 dependencies = [
  "blake2b-rs 0.1.5",
  "faster-hex 0.3.1",
- "includedir",
- "includedir_codegen",
- "phf",
+ "includedir 0.5.0",
+ "includedir_codegen 0.5.0",
+ "phf 0.7.24",
 ]
 
 [[package]]
@@ -1332,9 +1405,9 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4060f4657be78b8e766215b02b18a2e862d83745545de804638e2b545e81aee6"
+checksum = "c9495705279e7140bf035dde1f6e750c162df8b625267cd52cc44e0b156732c8"
 dependencies = [
  "cfg-if 1.0.0",
  "libc",
@@ -1428,6 +1501,12 @@ checksum = "322f4de77956e22ed0e5032c359a0f1273f1f7f0d79bfa3b8ffbc730d7fbcc5c"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "hex"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "644f9158b2f133fd50f5fb3242878846d9eb792e445c893805ff0e3824006e35"
 
 [[package]]
 name = "hostname"
@@ -1624,7 +1703,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e97402f770a519ebea51b27131c3b6558cfd2375aff21294bad806bad91bf0b6"
 dependencies = [
  "flate2",
- "phf",
+ "phf 0.7.24",
+]
+
+[[package]]
+name = "includedir"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "afd126bd778c00c43a9dc76d1609a0894bf4222088088b2217ccc0ce9e816db7"
+dependencies = [
+ "flate2",
+ "phf 0.8.0",
 ]
 
 [[package]]
@@ -1634,7 +1723,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af7d542be113fd84855692fb536c16cc4c09527724d1dca8953047d71cccadef"
 dependencies = [
  "flate2",
- "phf_codegen",
+ "phf_codegen 0.7.24",
+ "walkdir",
+]
+
+[[package]]
+name = "includedir_codegen"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ac1500c9780957c9808c4ec3b94002f35aab01483833f5a8bce7dfb243e3148"
+dependencies = [
+ "flate2",
+ "phf_codegen 0.8.0",
  "walkdir",
 ]
 
@@ -1659,7 +1759,9 @@ dependencies = [
 name = "info-type-script"
 version = "0.1.0"
 dependencies = [
- "lazy_static",
+ "blake2b-ref",
+ "bytes 1.0.1",
+ "hex",
  "num-bigint",
  "num-traits",
  "share",
@@ -1709,6 +1811,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "keccak"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "67c21572b4949434e4fc1e1978b99c5f77064153c59d998bf13ecd96fb5ecba7"
+
+[[package]]
 name = "kernel32-sys"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1723,9 +1831,6 @@ name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
-dependencies = [
- "spin",
-]
 
 [[package]]
 name = "libc"
@@ -2176,7 +2281,16 @@ version = "0.7.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3da44b85f8e8dfaec21adae67f95d93244b2ecf6ad2a692320598dcc8e6dd18"
 dependencies = [
- "phf_shared",
+ "phf_shared 0.7.24",
+]
+
+[[package]]
+name = "phf"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3dfb61232e34fcb633f43d12c58f83c1df82962dcdfa565a4e866ffc17dafe12"
+dependencies = [
+ "phf_shared 0.8.0",
 ]
 
 [[package]]
@@ -2185,8 +2299,18 @@ version = "0.7.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b03e85129e324ad4166b06b2c7491ae27fe3ec353af72e72cd1654c7225d517e"
 dependencies = [
- "phf_generator",
- "phf_shared",
+ "phf_generator 0.7.24",
+ "phf_shared 0.7.24",
+]
+
+[[package]]
+name = "phf_codegen"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbffee61585b0411840d3ece935cce9cb6321f01c45477d30066498cd5e1a815"
+dependencies = [
+ "phf_generator 0.8.0",
+ "phf_shared 0.8.0",
 ]
 
 [[package]]
@@ -2195,8 +2319,18 @@ version = "0.7.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09364cc93c159b8b06b1f4dd8a4398984503483891b0c26b867cf431fb132662"
 dependencies = [
- "phf_shared",
+ "phf_shared 0.7.24",
  "rand 0.6.5",
+]
+
+[[package]]
+name = "phf_generator"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17367f0cc86f2d25802b2c26ee58a7b23faeccf78a396094c13dced0d0182526"
+dependencies = [
+ "phf_shared 0.8.0",
+ "rand 0.7.3",
 ]
 
 [[package]]
@@ -2205,7 +2339,16 @@ version = "0.7.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "234f71a15de2288bcb7e3b6515828d22af7ec8598ee6d24c3b526fa0a80b67a0"
 dependencies = [
- "siphasher",
+ "siphasher 0.2.3",
+]
+
+[[package]]
+name = "phf_shared"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c00cf8b9eafe68dde5e9eaa2cef8ee84a9336a47d566ec55ca16589633b65af7"
+dependencies = [
+ "siphasher 0.3.3",
 ]
 
 [[package]]
@@ -2371,7 +2514,7 @@ dependencies = [
  "rand_isaac",
  "rand_jitter",
  "rand_os",
- "rand_pcg",
+ "rand_pcg 0.1.2",
  "rand_xorshift",
  "winapi 0.3.9",
 ]
@@ -2387,6 +2530,7 @@ dependencies = [
  "rand_chacha 0.2.2",
  "rand_core 0.5.1",
  "rand_hc 0.2.0",
+ "rand_pcg 0.2.1",
 ]
 
 [[package]]
@@ -2461,7 +2605,7 @@ version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c026d7df8b298d90ccbbc5190bd04d85e159eaf5576caeacf8741da93ccbd2e5"
 dependencies = [
- "getrandom 0.2.1",
+ "getrandom 0.2.2",
 ]
 
 [[package]]
@@ -2533,6 +2677,15 @@ checksum = "abf9b09b01790cfe0364f52bf32995ea3c39f4d2dd011eac241d2914146d0b44"
 dependencies = [
  "autocfg 0.1.7",
  "rand_core 0.4.2",
+]
+
+[[package]]
+name = "rand_pcg"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16abd0c1b639e9eb4d7c50c0b8100b0d0f849be2349829c740fe8e6eb4816429"
+dependencies = [
+ "rand_core 0.5.1",
 ]
 
 [[package]]
@@ -2784,7 +2937,16 @@ version = "0.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2932dc07acd2066ff2e3921a4419606b220ba6cd03a9935123856cc534877056"
 dependencies = [
- "secp256k1-sys",
+ "secp256k1-sys 0.1.2",
+]
+
+[[package]]
+name = "secp256k1"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6179428c22c73ac0fbb7b5579a56353ce78ba29759b3b8575183336ea74cdfb"
+dependencies = [
+ "secp256k1-sys 0.3.0",
 ]
 
 [[package]]
@@ -2792,6 +2954,15 @@ name = "secp256k1-sys"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ab2c26f0d3552a0f12e639ae8a64afc2e3db9c52fe32f5fc6c289d38519f220"
+dependencies = [
+ "cc",
+]
+
+[[package]]
+name = "secp256k1-sys"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11553d210db090930f4432bea123b31f70bbf693ace14504ea2a35e796c28dd2"
 dependencies = [
  "cc",
 ]
@@ -2876,18 +3047,18 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.119"
+version = "1.0.120"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9bdd36f49e35b61d49efd8aa7fc068fd295961fd2286d0b2ee9a4c7a14e99cc3"
+checksum = "166b2349061381baf54a58e4b13c89369feb0ef2eaa57198899e2312aac30aab"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.119"
+version = "1.0.120"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "552954ce79a059ddd5fd68c271592374bd15cab2274970380c000118aeffe1cd"
+checksum = "0ca2a8cb5805ce9e3b95435e3765b7b553cecc762d938d409434338386cb5775"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.8",
@@ -2951,6 +3122,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha3"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd26bc0e7a2e3a7c959bc494caf58b72ee0c71d67704e9520f736ca7e4853ecf"
+dependencies = [
+ "block-buffer",
+ "byte-tools",
+ "digest",
+ "keccak",
+ "opaque-debug",
+]
+
+[[package]]
 name = "share"
 version = "0.1.0"
 dependencies = [
@@ -2976,6 +3160,12 @@ name = "siphasher"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b8de496cf83d4ed58b6be86c3a275b8602f6ffe98d3024a869e124147a9a3ac"
+
+[[package]]
+name = "siphasher"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa8f3741c7372e75519bd9346068370c9cdaabcc1f9599cbcf2a2719352286b7"
 
 [[package]]
 name = "sized-chunks"
@@ -3040,7 +3230,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
 
 [[package]]
-name = "swap-order-lock-script"
+name = "swap-lock-script"
 version = "0.1.0"
 dependencies = [
  "num-bigint",
@@ -3144,7 +3334,7 @@ dependencies = [
  "openssl-sys",
  "rand 0.7.3",
  "ring",
- "secp256k1",
+ "secp256k1 0.17.2",
  "tokio 0.2.24",
  "tokio-util",
  "unsigned-varint",
@@ -3164,13 +3354,19 @@ name = "test"
 version = "0.1.0"
 dependencies = [
  "blake2b-rs 0.2.0",
+ "ckb-dyn-lock",
  "ckb-standalone-debugger",
+ "ckb-system-scripts",
  "ckb-testtool",
  "ckb-tool",
  "ckb-x64-simulator",
  "lazy_static",
+ "molecule",
  "rand 0.8.2",
+ "secp256k1 0.19.0",
  "serde_json",
+ "sha3",
+ "share",
 ]
 
 [[package]]
