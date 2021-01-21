@@ -34,9 +34,7 @@ default_alloc!(4 * 1024, 2048 * 1024, 64);
 pub fn main() -> Result<(), Error> {
     let info_type_code_hash = load_script()?.code_hash().unpack();
 
-    if QueryIter::new(load_cell, Source::Input).count() == 1
-        && QueryIter::new(load_cell, Source::Output).count() == 2
-    {
+    if QueryIter::new(load_cell, Source::Output).count() == 2 {
         verify_info_creation(&load_cell(0, Source::Output)?, info_type_code_hash)?;
         return Ok(());
     }
@@ -87,8 +85,6 @@ pub fn verify_info_creation(
 ) -> Result<(), Error> {
     verify_type_id()?;
 
-    let input_cell_count = QueryIter::new(load_cell, Source::Input).count();
-    let output_cell_count = QueryIter::new(load_cell, Source::Output).count();
     let input_info_cell_count = QueryIter::new(load_cell, Source::Input)
         .filter(|cell| {
             cell.type_()
@@ -97,7 +93,7 @@ pub fn verify_info_creation(
         })
         .count();
 
-    if input_cell_count == 1 && output_cell_count == 2 && input_info_cell_count == 0 {
+    if input_info_cell_count == 0 {
         let info_out_lock_args: Vec<u8> = info_out_cell.lock().args().unpack();
         let pool_type_hash = get_cell_type_hash!(1, Source::Output);
         let output_info_cell_count = QueryIter::new(load_cell, Source::Output)
