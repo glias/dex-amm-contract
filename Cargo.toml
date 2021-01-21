@@ -1,0 +1,15 @@
+[workspace]
+members = [
+    "contracts/swap-order-lock-script",
+    "contracts/liquidity-lock-script",
+    "contracts/info-lock-script",
+    "contracts/info-type-script",
+    "share"
+]
+
+[profile.release]
+overflow-checks = true
+opt-level = 's'
+lto = true
+codegen-units = 1
+panic = 'abort'
