@@ -21,17 +21,19 @@ pub enum Error {
     SellSUDTFailed,
     BuySUDTFailed = 15,
     InvalidChangeCell,
-    LiquidityPoolTokenDiff,
+    InvalidTotalLiquidity,
     InvalidInitialLiquidityTx,
     BurnLiquidityFailed,
     SUDTGotAmountDiff = 20,
+    CKBGotAmountDiff,
     InvalidCKBAmount,
     CKBReserveAmountDiff,
     SUDTReserveAmountDiff,
-    CKBGotAmountDiff,
     InvalidCKBReserve = 25,
     InvalidSUDTReserve,
-    InvalidTotalLiquidity,
+    CKBInjectAmountDiff,
+    SUDTInjectAmountDiff,
+    LiquidityPoolTokenDiff,
 }
 
 impl From<SysError> for Error {

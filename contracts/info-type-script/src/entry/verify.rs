@@ -21,6 +21,7 @@ const INFO_VERSION: u8 = 1;
 
 const LIQUIDITY_CELL_BASE_INDEX: usize = 3;
 const THOUSAND: u128 = 1_000;
+const FEE_RATE: u128 = 997;
 const SUDT_CAPACITY: u64 = 15_400_000_000;
 const INFO_CAPACITY: u64 = 21_400_000_000;
 
@@ -158,17 +159,24 @@ pub fn swap_tx_verification() -> Result<(), Error> {
     let zero = BigInt::zero();
 
     if ckb_got > zero && sudt_got < zero {
+        // Ckb -> SUDT
         let sudt_paid = info_in_data.sudt_reserve - info_out_data.sudt_reserve;
-        if ckb_got.to_biguint().unwrap() * 997u128 * (sudt_reserve - sudt_paid)
-            != BigUint::from(ckb_reserve) * sudt_paid * THOUSAND
+        let tmp_ckb_got = ckb_got.to_biguint().unwrap();
+
+        if BigUint::from(sudt_paid)
+            != tmp_ckb_got.clone() * FEE_RATE * sudt_reserve
+                / (ckb_reserve * THOUSAND + tmp_ckb_got * FEE_RATE)
         {
             return Err(Error::BuySUDTFailed);
         }
     } else if ckb_got < zero && sudt_got > zero {
+        // SUDT -> Ckb
         let ckb_paid = info_in_data.ckb_reserve - info_out_data.ckb_reserve;
         let tmp_sudt_got = sudt_got.to_biguint().unwrap();
-        if tmp_sudt_got.clone() * 997u128 * ckb_reserve
-            != BigUint::from(ckb_paid) * (sudt_reserve * THOUSAND + 997u128 * tmp_sudt_got)
+
+        if BigUint::from(ckb_paid)
+            != tmp_sudt_got.clone() * FEE_RATE * ckb_reserve / BigUint::from(ckb_paid)
+                * (sudt_reserve * THOUSAND + FEE_RATE * tmp_sudt_got)
         {
             return Err(Error::SellSUDTFailed);
         }
@@ -287,10 +295,10 @@ fn mint_liquidity(
             return Err(Error::InvalidLiquidityCell);
         }
 
-        if BigUint::from(user_liquidity) * sudt_reserve
-            != BigUint::from(sudt_injected) * total_liquidity
+        if BigUint::from(sudt_injected)
+            != BigUint::from(user_liquidity) * sudt_reserve / total_liquidity
         {
-            return Err(Error::LiquidityPoolTokenDiff);
+            return Err(Error::SUDTInjectAmountDiff);
         }
     } else if change_data.len() >= 16 {
         if get_cell_type_hash!(liquidity_index + 1, Source::Output)
@@ -314,10 +322,10 @@ fn mint_liquidity(
             return Err(Error::InvalidLiquidityCell);
         }
 
-        if BigUint::from(user_liquidity) * ckb_reserve
-            != BigUint::from(ckb_injected) * total_liquidity
+        if BigUint::from(ckb_injected)
+            != BigUint::from(user_liquidity) * ckb_reserve / total_liquidity
         {
-            return Err(Error::LiquidityPoolTokenDiff);
+            return Err(Error::CKBInjectAmountDiff);
         }
     } else {
         return Err(Error::InvalidChangeCell);
@@ -362,24 +370,27 @@ fn burn_liquidity(
 
     let user_ckb_got = BigUint::from(sudt_out.capacity().unpack()) + ckb_out.capacity().unpack()
         - liquidity_order_cell.capacity().unpack();
-    let user_sudt_got = decode_u128(&sudt_data)?;
+    let user_sudt_got = BigUint::from(decode_u128(&sudt_data)?);
     let burned_liquidity = liquidity_order_data;
     let min_ckb_got = BigUint::from(liquidity_lock_args.amount_0);
-    let min_sudt_got = liquidity_lock_args.amount_1;
+    let min_sudt_got = BigUint::from(liquidity_lock_args.amount_1);
     let zero = BigUint::zero();
 
     if min_ckb_got == zero || user_ckb_got < min_ckb_got || user_sudt_got < min_sudt_got {
         return Err(Error::InvalidLiquidityCell);
     }
 
-    if user_ckb_got.clone() * total_liquidity != BigUint::from(ckb_reserve) * burned_liquidity
-        || BigUint::from(user_sudt_got) * total_liquidity
-            != BigUint::from(sudt_reserve) * burned_liquidity
-    {
-        return Err(Error::LiquidityPoolTokenDiff);
+    if user_ckb_got != BigUint::from(ckb_reserve) * burned_liquidity / total_liquidity {
+        return Err(Error::CKBGotAmountDiff);
+    }
+
+    if user_sudt_got != BigUint::from(sudt_reserve) * burned_liquidity / total_liquidity {
+        return Err(Error::SUDTGotAmountDiff);
     }
 
     let user_ckb_got: u128 = user_ckb_got.try_into().unwrap();
+    let user_sudt_got: u128 = user_sudt_got.try_into().unwrap();
+
     *pool_ckb_paid += user_ckb_got;
     *pool_sudt_paid += user_sudt_got;
     *user_liquidity_burned += burned_liquidity;
