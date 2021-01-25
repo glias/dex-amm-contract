@@ -45,7 +45,7 @@ pub struct LiquidityRequestLockArgs {
     pub amount_0:       u64,
     pub amount_1:       u128,
     pub info_type_hash: [u8; 32],
-    pub tips:           u128,
+    pub tips:           u64,
     pub tips_sudt:      u128,
 }
 
@@ -60,7 +60,7 @@ impl LiquidityRequestLockArgs {
         let amount_1 = decode_u128(&cell_raw_data[33..49])?;
         let mut info_type_hash = [0u8; 32];
         info_type_hash.copy_from_slice(&cell_raw_data[57..89]);
-        let tips = decode_u128(&cell_raw_data[89..97])?;
+        let tips = decode_u64(&cell_raw_data[89..97])?;
         let tips_sudt = decode_u128(&cell_raw_data[97..113])?;
 
         Ok(LiquidityRequestLockArgs {

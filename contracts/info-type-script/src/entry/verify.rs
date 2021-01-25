@@ -159,7 +159,7 @@ pub fn swap_tx_verification() -> Result<(), Error> {
 
     if ckb_got > zero && sudt_got < zero {
         let sudt_paid = info_in_data.sudt_reserve - info_out_data.sudt_reserve;
-        if ckb_got.to_biguint().unwrap() * 998u128 * (sudt_reserve - sudt_paid)
+        if ckb_got.to_biguint().unwrap() * 997u128 * (sudt_reserve - sudt_paid)
             != BigUint::from(ckb_reserve) * sudt_paid * THOUSAND
         {
             return Err(Error::BuySUDTFailed);
@@ -167,8 +167,8 @@ pub fn swap_tx_verification() -> Result<(), Error> {
     } else if ckb_got < zero && sudt_got > zero {
         let ckb_paid = info_in_data.ckb_reserve - info_out_data.ckb_reserve;
         let tmp_sudt_got = sudt_got.to_biguint().unwrap();
-        if tmp_sudt_got.clone() * 998u128 * ckb_reserve
-            != BigUint::from(ckb_paid) * (sudt_reserve * THOUSAND + 998u128 * tmp_sudt_got)
+        if tmp_sudt_got.clone() * 997u128 * ckb_reserve
+            != BigUint::from(ckb_paid) * (sudt_reserve * THOUSAND + 997u128 * tmp_sudt_got)
         {
             return Err(Error::SellSUDTFailed);
         }
