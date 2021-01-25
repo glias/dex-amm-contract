@@ -15,13 +15,14 @@ mod error;
 use core::result::Result;
 
 use num_bigint::BigUint;
-use share::cell::{OrderKind, SwapOrderLockArgs};
+use share::cell::SwapRequestLockArgs;
 use share::ckb_std::{
     ckb_constants::Source,
     ckb_types::prelude::*,
     default_alloc,
     high_level::{
-        load_cell, load_cell_data, load_cell_lock_hash, load_script, load_witness_args, QueryIter,
+        load_cell, load_cell_data, load_cell_lock_hash, load_cell_type, load_script,
+        load_witness_args, QueryIter,
     },
 };
 use share::{ckb_std, decode_u128, get_cell_type_hash};
@@ -44,10 +45,10 @@ fn program_entry() -> i8 {
 
 fn main() -> Result<(), Error> {
     let script = load_script()?;
-    let lock_args = SwapOrderLockArgs::from_raw(script.args().as_slice())?;
+    let lock_args = SwapRequestLockArgs::from_raw(script.args().as_slice())?;
 
     for (idx, lock_hash) in QueryIter::new(load_cell_lock_hash, Source::Input).enumerate() {
-        if lock_hash.as_ref() == lock_args.user_lock_hash.as_ref() {
+        if lock_hash == lock_args.user_lock_hash {
             let witness = load_witness_args(idx, Source::Input)?;
             if witness.total_size() != 0 {
                 return Ok(());
@@ -66,27 +67,20 @@ fn main() -> Result<(), Error> {
 
     let order_cell = load_cell(index, Source::Input)?;
     let output_cell = load_cell(index, Source::Output)?;
-    let order_lock_args = SwapOrderLockArgs::from_raw(&load_cell_data(index, Source::Input)?)?;
+    let order_lock_args = SwapRequestLockArgs::from_raw(&load_cell_data(index, Source::Input)?)?;
 
-    if load_cell_lock_hash(index, Source::Output)?.as_ref()
-        != order_lock_args.user_lock_hash.as_ref()
-    {
+    if load_cell_lock_hash(index, Source::Output)? != order_lock_args.user_lock_hash {
         return Err(Error::InvalidOutputLockHash);
     }
 
-    if order_lock_args.amount_in == 0 {
-        return Err(Error::InvalidAmountIn);
-    }
-
-    if order_lock_args.kind == OrderKind::SellCKB {
-        if get_cell_type_hash!(index, Source::Output) != get_cell_type_hash!(1, Source::Input) {
+    // if order_lock_args.kind == OrderKind::SellCKB {
+    if load_cell_type(index, Source::Input)?.is_none() {
+        // Ckb -> SUDT
+        if order_lock_args.sudt_type_hash == get_cell_type_hash!(index, Source::Output) {
             return Err(Error::InvalidOutputTypeHash);
         }
 
-        if order_cell.capacity().unpack() <= output_cell.capacity().unpack()
-            || (order_cell.capacity().unpack() - output_cell.capacity().unpack()) as u128
-                != order_lock_args.amount_in
-        {
+        if order_cell.capacity().unpack() <= output_cell.capacity().unpack() {
             return Err(Error::InvalidCapacity);
         }
 
@@ -94,6 +88,7 @@ fn main() -> Result<(), Error> {
             return Err(Error::SwapAmountLessThanMin);
         }
     } else {
+        // SUDT -> Ckb
         if output_cell.type_().is_some() {
             return Err(Error::InvalidOutputTypeHash);
         }

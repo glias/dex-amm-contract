@@ -12,10 +12,9 @@ pub enum Error {
     MissingTypeScript = 5,
     InvalidOutputLockHash,
     InvalidOutputTypeHash,
-    InvalidAmountIn,
+    SwapAmountLessThanMin,
     InvalidCapacity,
     InvalidOutputData = 10,
-    SwapAmountLessThanMin,
 }
 
 impl From<SysError> for Error {
