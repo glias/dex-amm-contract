@@ -17,7 +17,7 @@ use share::ckb_std::{
     // debug,
     high_level::{load_cell, load_cell_data, load_cell_lock_hash, load_script, QueryIter},
 };
-use share::{get_cell_type_hash, hash::blake2b_vec};
+use share::{blake2b, get_cell_type_hash};
 use type_id::verify_type_id;
 
 use crate::error::Error;
@@ -106,8 +106,7 @@ pub fn verify_info_creation(
 
         if output_info_cell_count != 2
             || info_out_cell.lock().hash_type() != HashType::Data.into()
-            || info_out_lock_args[0..32]
-                != blake2b_vec(&mut ["ckb".as_bytes(), pool_type_hash.as_ref()])
+            || info_out_lock_args[0..32] != blake2b!("ckb", pool_type_hash)
             || info_out_lock_args[32..64] != get_cell_type_hash!(0, Source::Output)
             || load_cell_lock_hash(0, Source::Output)? != load_cell_lock_hash(1, Source::Output)?
             || load_cell_data(1, Source::Output)?.len() < 16
