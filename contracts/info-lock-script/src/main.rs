@@ -49,8 +49,8 @@ fn main() -> Result<(), Error> {
     let self_args = load_script()?.args();
     let hash = blake2b!("ckb", pool_type_hash);
 
-    if hash[0..20] != self_args.as_slice()[0..20]
-        || get_cell_type_hash!(0, Source::Input)[0..20] != self_args.as_slice()[20..40]
+    if hash != self_args.as_slice()[0..32]
+        || get_cell_type_hash!(0, Source::Input) != self_args.as_slice()[32..64]
     {
         return Err(Error::InvalidInfoLock);
     }

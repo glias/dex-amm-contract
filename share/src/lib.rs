@@ -13,19 +13,6 @@ pub mod hash;
 use ckb_std::error::SysError;
 
 #[macro_export]
-macro_rules! blake2b {
-    ($($field: expr), *) => {{
-        let mut res = [0u8; 32];
-        let mut blake2b = share::hash::new_blake2b();
-
-        $( blake2b.update($field.as_ref()); )*
-
-        blake2b.finalize(&mut res);
-        res
-    }}
-}
-
-#[macro_export]
 macro_rules! get_cell_type_hash {
     ($index: expr, $source: expr) => {
         share::ckb_std::high_level::load_cell_type_hash($index, $source)?

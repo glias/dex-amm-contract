@@ -6,6 +6,19 @@ pub const BLANK_HASH: [u8; 32] = [
     67, 211, 136, 197, 161, 47, 66, 181, 99, 61, 22, 62,
 ];
 
+#[macro_export]
+macro_rules! blake2b {
+    ($($field: expr), *) => {{
+        let mut res = [0u8; 32];
+        let mut blake2b = share::hash::new_blake2b();
+
+        $( blake2b.update($field.as_ref()); )*
+
+        blake2b.finalize(&mut res);
+        res
+    }}
+}
+
 pub fn new_blake2b() -> Blake2b {
     Blake2bBuilder::new(32)
         .personal(CKB_HASH_PERSONALIZATION)
@@ -25,4 +38,17 @@ pub fn blake2b_256<T: AsRef<[u8]>>(s: T) -> [u8; 32] {
         return BLANK_HASH;
     }
     inner_blake2b_256(s)
+}
+
+pub fn blake2b_vec<T: AsRef<[u8]> + Ord>(s: &mut [T]) -> [u8; 32] {
+    s.sort();
+    let mut res = [0u8; 32];
+    let mut blake2b = new_blake2b();
+
+    for i in s.into_iter() {
+        blake2b.update(i.as_ref());
+    }
+
+    blake2b.finalize(&mut res);
+    res
 }

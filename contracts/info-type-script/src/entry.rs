@@ -17,7 +17,7 @@ use share::ckb_std::{
     // debug,
     high_level::{load_cell, load_cell_data, load_cell_lock_hash, load_script, QueryIter},
 };
-use share::{blake2b, get_cell_type_hash};
+use share::{get_cell_type_hash, hash::blake2b_vec};
 use type_id::verify_type_id;
 
 use crate::error::Error;
@@ -70,7 +70,7 @@ pub fn main() -> Result<(), Error> {
         return Err(Error::SUDTReserveAmountDiff);
     }
 
-    if get_cell_type_hash!(3, Source::Input)[0..20] == info_in_data.liquidity_sudt_type_hash {
+    if get_cell_type_hash!(3, Source::Input) == info_in_data.liquidity_sudt_type_hash {
         verify::liquidity_tx_verification()?;
     } else {
         verify::swap_tx_verification()?;
@@ -79,6 +79,7 @@ pub fn main() -> Result<(), Error> {
     Ok(())
 }
 
+#[allow(clippy::string_lit_as_bytes)]
 pub fn verify_info_creation(
     info_out_cell: &CellOutput,
     info_type_code_hash: [u8; 32],
@@ -105,8 +106,9 @@ pub fn verify_info_creation(
 
         if output_info_cell_count != 2
             || info_out_cell.lock().hash_type() != HashType::Data.into()
-            || info_out_lock_args[0..20] != blake2b!("ckb", pool_type_hash)[0..20]
-            || info_out_lock_args[20..40] != get_cell_type_hash!(0, Source::Output)[0..20]
+            || info_out_lock_args[0..32]
+                != blake2b_vec(&mut ["ckb".as_bytes(), pool_type_hash.as_ref()])
+            || info_out_lock_args[32..64] != get_cell_type_hash!(0, Source::Output)
             || load_cell_lock_hash(0, Source::Output)? != load_cell_lock_hash(1, Source::Output)?
             || load_cell_data(1, Source::Output)?.len() < 16
         {
