@@ -162,22 +162,21 @@ pub fn swap_tx_verification() -> Result<(), Error> {
         // Ckb -> SUDT
         let sudt_paid = info_in_data.sudt_reserve - info_out_data.sudt_reserve;
         let tmp_ckb_got = ckb_got.to_biguint().unwrap();
+        let numerator = tmp_ckb_got.clone() * FEE_RATE * sudt_reserve;
+        let denominator = ckb_reserve * THOUSAND + tmp_ckb_got * FEE_RATE;
 
-        if BigUint::from(sudt_paid)
-            != tmp_ckb_got.clone() * FEE_RATE * sudt_reserve
-                / (ckb_reserve * THOUSAND + tmp_ckb_got * FEE_RATE)
-        {
+        if BigUint::from(sudt_paid) != numerator / denominator {
             return Err(Error::BuySUDTFailed);
         }
     } else if ckb_got < zero && sudt_got > zero {
         // SUDT -> Ckb
         let ckb_paid = info_in_data.ckb_reserve - info_out_data.ckb_reserve;
         let tmp_sudt_got = sudt_got.to_biguint().unwrap();
+        let numerator = tmp_sudt_got.clone() * FEE_RATE * ckb_reserve;
+        let denominator =
+            BigUint::from(ckb_paid) * (sudt_reserve * THOUSAND + FEE_RATE * tmp_sudt_got);
 
-        if BigUint::from(ckb_paid)
-            != tmp_sudt_got.clone() * FEE_RATE * ckb_reserve / BigUint::from(ckb_paid)
-                * (sudt_reserve * THOUSAND + FEE_RATE * tmp_sudt_got)
-        {
+        if BigUint::from(ckb_paid) != numerator / denominator {
             return Err(Error::SellSUDTFailed);
         }
     } else {
