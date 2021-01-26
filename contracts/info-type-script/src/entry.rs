@@ -104,14 +104,28 @@ pub fn verify_info_creation(
             })
             .count();
 
-        if output_info_cell_count != 2
-            || info_out_cell.lock().hash_type() != HashType::Data.into()
-            || info_out_lock_args[0..32] != blake2b!("ckb", pool_type_hash)
-            || info_out_lock_args[32..64] != get_cell_type_hash!(0, Source::Output)
-            || load_cell_lock_hash(0, Source::Output)? != load_cell_lock_hash(1, Source::Output)?
-            || load_cell_data(1, Source::Output)?.len() < 16
-        {
-            return Err(Error::InfoCreationError);
+        if output_info_cell_count != 2 {
+            return Err(Error::InfoCreationOutputCellCountMismatch);
+        }
+
+        if info_out_cell.lock().hash_type() != HashType::Data.into() {
+            return Err(Error::InfoCellHashTypeMismatch);
+        }
+
+        if info_out_lock_args[0..32] != blake2b!("ckb", pool_type_hash) {
+            return Err(Error::InfoLockArgsFrontHalfMismatch);
+        }
+
+        if info_out_lock_args[32..64] != get_cell_type_hash!(0, Source::Output) {
+            return Err(Error::InfoLockArgsSecondHalfMismatch);
+        }
+
+        if load_cell_lock_hash(0, Source::Output)? != load_cell_lock_hash(1, Source::Output)? {
+            return Err(Error::InfoCreationCellLockHashMismatch);
+        }
+
+        if load_cell_data(1, Source::Output)?.len() < 16 {
+            return Err(Error::CellDataLenTooShort);
         }
     } else {
         return Err(Error::InfoCreationError);

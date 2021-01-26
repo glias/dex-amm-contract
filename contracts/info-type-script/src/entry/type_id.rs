@@ -14,7 +14,7 @@ pub fn verify_type_id() -> Result<(), Error> {
     // which is the hash of all inputs when creating
     // the cell.
     if load_script()?.args().len() != 32 {
-        return Err(Error::InvalidTypeID);
+        return Err(Error::InvalidInfoTypeArgsLen);
     }
 
     // There could be at most one input cell and one
@@ -22,7 +22,7 @@ pub fn verify_type_id() -> Result<(), Error> {
     if QueryIter::new(load_cell, Source::GroupInput).count() > 1
         || QueryIter::new(load_cell, Source::GroupOutput).count() > 1
     {
-        return Err(Error::InvalidTypeID);
+        return Err(Error::InputCellMoreThanOne);
     }
 
     // If there's only one output cell with current
