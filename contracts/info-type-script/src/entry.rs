@@ -143,8 +143,8 @@ enum HashType {
 impl Into<Byte> for HashType {
     fn into(self) -> Byte {
         match self {
-            HashType::Data => Byte::new(1u8),
-            HashType::Code => Byte::new(2u8),
+            HashType::Data => Byte::new(0u8),
+            HashType::Code => Byte::new(1u8),
         }
     }
 }
