@@ -42,17 +42,19 @@ fn program_entry() -> i8 {
 
 fn main() -> Result<(), Error> {
     if QueryIter::new(load_cell, Source::GroupInput).count() != 2 {
-        return Err(Error::InvalidInfoLock);
+        return Err(Error::InvalidInfoCellCount);
     }
 
     let pool_type_hash = get_cell_type_hash!(1, Source::Input);
     let self_args = load_script()?.args();
     let hash = blake2b!("ckb", pool_type_hash);
 
-    if hash != self_args.as_slice()[0..32]
-        || get_cell_type_hash!(0, Source::Input) != self_args.as_slice()[32..64]
-    {
-        return Err(Error::InvalidInfoLock);
+    if hash != self_args.as_slice()[0..32] {
+        return Err(Error::InfoLockArgsFrontHalfMismatch);
+    }
+
+    if get_cell_type_hash!(0, Source::Input) != self_args.as_slice()[32..64] {
+        return Err(Error::InfoLockArgsSecondHalfMismatch);
     }
 
     Ok(())

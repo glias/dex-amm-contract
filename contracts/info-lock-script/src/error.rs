@@ -9,7 +9,9 @@ pub enum Error {
     LengthNotEnough,
     Encoding,
     MissingTypeScript = 5,
-    InvalidInfoLock,
+    InvalidInfoCellCount,
+    InfoLockArgsFrontHalfMismatch,
+    InfoLockArgsSecondHalfMismatch,
 }
 
 impl From<SysError> for Error {

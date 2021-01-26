@@ -5,14 +5,17 @@ location = { file = "build/release/info-type-script" }
 
 [[cells]]
 name = "info-lock-script"
+enable_type_id = false
 location = { file = "build/release/info-lock-script" }
 
 [[cells]]
 name = "liquidity-lock-script"
+enable_type_id = false
 location = { file = "build/release/liquidity-lock-script"}
 
 [[cells]]
 name = "swap-order-lock-script"
+enable_type_id = false
 location = { file = "build/release/swap-order-lock-script"}
 
 # Replace with your own lock if you want to unlock deployed cells.
