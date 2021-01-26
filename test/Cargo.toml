@@ -21,3 +21,4 @@ share = { path = "../share" }
 molecule = "0.6"
 secp256k1 = "0.19"
 sha3 = "0.8"
+hex = "0.4"

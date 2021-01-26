@@ -10,6 +10,7 @@ pub mod cell_builder;
 mod schema;
 #[cfg(test)]
 mod tests;
+#[allow(dead_code)]
 pub mod tx_builder;
 
 lazy_static::lazy_static! {

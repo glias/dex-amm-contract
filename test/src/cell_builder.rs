@@ -1,7 +1,6 @@
-use ckb_tool::ckb_types::core::{Capacity, DepType, TransactionBuilder, TransactionView};
+use ckb_tool::ckb_types::core::Capacity;
 use ckb_tool::ckb_types::packed::Uint128;
-use ckb_tool::ckb_types::{bytes::Bytes, prelude::*, H256};
-use molecule::prelude::*;
+use ckb_tool::ckb_types::{bytes::Bytes, prelude::*};
 
 use crate::schema::cell::InfoCellData;
 

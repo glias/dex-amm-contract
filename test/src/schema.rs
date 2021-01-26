@@ -15,3 +15,10 @@ impl Pack<basic::Uint64> for u64 {
         basic::Uint64::new_unchecked(Bytes::from(self.to_le_bytes().to_vec()))
     }
 }
+
+impl Pack<basic::Byte32> for [u8; 32] {
+    fn pack(&self) -> basic::Byte32 {
+        let tmp = Bytes::from(self.to_vec());
+        basic::Byte32::new_unchecked(tmp)
+    }
+}

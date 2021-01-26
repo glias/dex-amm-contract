@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
@@ -6,14 +5,13 @@ use ckb_dyn_lock::locks::binary::{self, Binary};
 use ckb_standalone_debugger::transaction::{
     MockCellDep, MockInfo, MockInput, MockTransaction, ReprMockTransaction,
 };
-use ckb_system_scripts::BUNDLED_CELL;
+// use ckb_system_scripts::BUNDLED_CELL;
 use ckb_testtool::{builtin::ALWAYS_SUCCESS, context::Context};
 use ckb_tool::ckb_crypto::secp::{Generator, Privkey, Pubkey};
-use ckb_tool::ckb_error::assert_error_eq;
 use ckb_tool::ckb_hash::{blake2b_256, new_blake2b};
 use ckb_tool::ckb_script::{ScriptError, TransactionScriptError};
-use ckb_tool::ckb_types::core::{Capacity, DepType, TransactionBuilder, TransactionView};
-use ckb_tool::ckb_types::packed::{self, *};
+use ckb_tool::ckb_types::core::{DepType, TransactionBuilder, TransactionView};
+use ckb_tool::ckb_types::packed::*;
 use ckb_tool::ckb_types::{bytes::Bytes, prelude::*, H256};
 use ckb_x64_simulator::RunningSetup;
 use molecule::prelude::*;
@@ -88,7 +86,7 @@ impl Inputs {
     }
 }
 
-struct Outputs {
+pub struct Outputs {
     cell:             OutputCell,
     custom_type_args: Option<Bytes>,
     custom_lock_args: Option<Bytes>,
@@ -146,7 +144,7 @@ fn build_tx(
         .build();
 
     let info_type_bin: Bytes = Loader::default().load_binary("info-type-script");
-    let info_type_out_point = context.deploy_cell(info_lock_bin);
+    let info_type_out_point = context.deploy_cell(info_type_bin);
     let info_type_dep = CellDep::new_builder()
         .out_point(info_lock_out_point.clone())
         .build();
@@ -177,48 +175,43 @@ fn build_tx(
         (user_lock_script, hash)
     };
 
-    let create_user_type_script = |context: &mut Context, idx: usize| -> (Script, Bytes) {
-        let user_type_script = {
-            let args = Bytes::from(idx.to_le_bytes().to_vec());
-            context
-                .build_script(&always_success_out_point, args)
-                .expect("user lock script")
-        };
-        let hash = user_type_script.calc_script_hash().as_bytes();
-        (user_type_script, hash)
-    };
-
     // Prepare inputs
     let mut inputs = vec![];
     let mut witnesses = vec![];
     let mut cell_deps: Vec<CellDep> = vec![];
     for (idx, input) in input_orders.into_iter().enumerate() {
         let (user_lock_script, hash) = create_user_lock_script(context, idx);
+
+        let user_lock_script = match input.custom_lock_args.clone() {
+            Some(lock_args) => user_lock_script.as_builder().args(lock_args.pack()).build(),
+            None => user_lock_script,
+        };
+
+        let sudt_type_script = match input.custom_type_args.clone() {
+            Some(type_args) => {
+                let type_script = sudt_type_script.clone();
+                type_script.as_builder().args(type_args.pack()).build()
+            }
+            None => sudt_type_script.clone(),
+        };
+
         match input.cell {
             InputCell::Info(cell) => {
-                let lock_hash = input.custom_lock_args.unwrap_or_else(|| {
-                    let (_, hash) = create_user_lock_script(context, idx);
-                    hash
-                });
+                let lock_args = input.custom_lock_args.expect("info input lock args");
 
                 let info_lock_script = context
-                    .build_script(&info_lock_out_point, lock_hash)
+                    .build_script(&info_lock_out_point, lock_args)
                     .expect("info lock script");
 
-                let type_hash = input.custom_type_args.unwrap_or_else(|| {
-                    let (_, hash) = create_user_type_script(context, idx);
-                    hash
-                });
-
                 let info_type_script = context
-                    .build_script(&info_type_out_point, type_hash)
+                    .build_script(&info_type_out_point, hash.clone())
                     .expect("info type script");
 
                 let input_out_point = context.create_cell(
                     CellOutput::new_builder()
                         .capacity(cell.capacity.pack())
                         .lock(info_lock_script.clone())
-                        .type_(Some(sudt_type_script.clone()).pack())
+                        .type_(Some(info_type_script).pack())
                         .build(),
                     cell.data,
                 );
@@ -235,7 +228,7 @@ fn build_tx(
                 let input_out_point = context.create_cell(
                     CellOutput::new_builder()
                         .capacity(cell.capacity.pack())
-                        .type_(Some(sudt_type_script).pack())
+                        .type_(Some(sudt_type_script.clone()).pack())
                         .lock(user_lock_script)
                         .build(),
                     Bytes::new(),
@@ -271,15 +264,15 @@ fn build_tx(
 
     let mut outputs = vec![];
     let mut outputs_data = vec![];
-    for (idx, order_result) in output_results.into_iter().enumerate() {
+    for (idx, output) in output_results.into_iter().enumerate() {
         let (user_lock_script, hash) = create_user_lock_script(context, idx);
 
-        let user_lock_script = match order_result.custom_lock_args {
+        let user_lock_script = match output.custom_lock_args.clone() {
             Some(lock_args) => user_lock_script.as_builder().args(lock_args.pack()).build(),
             None => user_lock_script,
         };
 
-        let sudt_type_script = match order_result.custom_type_args {
+        let sudt_type_script = match output.custom_type_args.clone() {
             Some(type_args) => {
                 let type_script = sudt_type_script.clone();
                 type_script.as_builder().args(type_args.pack()).build()
@@ -287,10 +280,11 @@ fn build_tx(
             None => sudt_type_script.clone(),
         };
 
-        let (output, data) = match order_result.cell {
+        let (output, data) = match output.cell {
             OutputCell::Info(cell) => {
+                let args = output.custom_lock_args.expect("info out lock args");
                 let info_lock_script = context
-                    .build_script(&info_lock_out_point, hash)
+                    .build_script(&info_lock_out_point, args)
                     .expect("info lock script");
                 let info_type_script = context
                     .build_script(&info_type_out_point, hash)
@@ -329,13 +323,26 @@ fn build_tx(
 
                 (output, cell.data)
             }
+            OutputCell::Pool(cell) => {
+                let lock_args = output.custom_lock_args.expect("pool output lock args");
+                let info_lock_script = context
+                    .build_script(&info_lock_out_point, lock_args)
+                    .expect("info lock script");
+                let output = CellOutput::new_builder()
+                    .capacity(cell.capacity.pack())
+                    .type_(Some(sudt_type_script).pack())
+                    .lock(info_lock_script)
+                    .build();
+
+                (output, cell.data)
+            }
         };
 
         outputs.push(output);
         outputs_data.push(data);
     }
 
-    let tx = TransactionBuilder::default()
+    TransactionBuilder::default()
         .inputs(inputs)
         .outputs(outputs)
         .outputs_data(outputs_data.pack())
@@ -344,12 +351,10 @@ fn build_tx(
         .cell_dep(always_success_dep)
         .cell_deps(cell_deps)
         .witnesses(witnesses.pack())
-        .build();
-
-    tx
+        .build()
 }
 
-fn build_test_context(
+pub fn build_test_context(
     input_orders: Vec<Inputs>,
     output_results: Vec<Outputs>,
 ) -> (Context, TransactionView) {
@@ -452,7 +457,7 @@ fn build_mock_transaction(tx: &TransactionView, context: &Context) -> MockTransa
     }
 }
 
-fn write_native_setup(
+pub fn write_native_setup(
     test_name: &str,
     binary_name: &str,
     tx: &TransactionView,
@@ -478,80 +483,80 @@ fn write_native_setup(
     .expect("write cmd to local file");
 }
 
-struct Secp256k1Lock;
+// struct Secp256k1Lock;
 
-impl Secp256k1Lock {
-    fn deploy(context: &mut Context) -> (OutPoint, Vec<CellDep>) {
-        let secp256k1_lock_bin = BUNDLED_CELL
-            .get("specs/cells/secp256k1_blake160_sighash_all")
-            .unwrap();
-        let secp256k1_lock_out_point = context.deploy_cell(secp256k1_lock_bin.to_vec().into());
-        let secp256k1_lock_dep = CellDep::new_builder()
-            .out_point(secp256k1_lock_out_point.clone())
-            .build();
+// impl Secp256k1Lock {
+//     fn deploy(context: &mut Context) -> (OutPoint, Vec<CellDep>) {
+//         let secp256k1_lock_bin = BUNDLED_CELL
+//             .get("specs/cells/secp256k1_blake160_sighash_all")
+//             .unwrap();
+//         let secp256k1_lock_out_point = context.deploy_cell(secp256k1_lock_bin.to_vec().into());
+//         let secp256k1_lock_dep = CellDep::new_builder()
+//             .out_point(secp256k1_lock_out_point.clone())
+//             .build();
 
-        let secp256k1_data_bin = BUNDLED_CELL.get("specs/cells/secp256k1_data").unwrap();
-        let secp256k1_data_out_point = context.deploy_cell(secp256k1_data_bin.to_vec().into());
-        let secp256k1_data_dep = CellDep::new_builder()
-            .out_point(secp256k1_data_out_point)
-            .build();
+//         let secp256k1_data_bin = BUNDLED_CELL.get("specs/cells/secp256k1_data").unwrap();
+//         let secp256k1_data_out_point = context.deploy_cell(secp256k1_data_bin.to_vec().into());
+//         let secp256k1_data_dep = CellDep::new_builder()
+//             .out_point(secp256k1_data_out_point)
+//             .build();
 
-        (secp256k1_lock_out_point, vec![
-            secp256k1_lock_dep,
-            secp256k1_data_dep,
-        ])
-    }
+//         (secp256k1_lock_out_point, vec![
+//             secp256k1_lock_dep,
+//             secp256k1_data_dep,
+//         ])
+//     }
 
-    fn sign_tx(tx: TransactionView, key: &Privkey) -> TransactionView {
-        const SIGNATURE_SIZE: usize = 65;
+//     fn sign_tx(tx: TransactionView, key: &Privkey) -> TransactionView {
+//         const SIGNATURE_SIZE: usize = 65;
 
-        let witnesses_len = tx.inputs().len();
-        let tx_hash = tx.hash();
-        let mut signed_witnesses: Vec<packed::Bytes> = Vec::new();
-        let mut blake2b = new_blake2b();
-        let mut message = [0u8; 32];
-        blake2b.update(&tx_hash.raw_data());
+//         let witnesses_len = tx.inputs().len();
+//         let tx_hash = tx.hash();
+//         let mut signed_witnesses: Vec<packed::Bytes> = Vec::new();
+//         let mut blake2b = new_blake2b();
+//         let mut message = [0u8; 32];
+//         blake2b.update(&tx_hash.raw_data());
 
-        // digest the first witness
-        let witness = WitnessArgs::default();
-        let zero_lock: Bytes = {
-            let mut buf = Vec::new();
-            buf.resize(SIGNATURE_SIZE, 0);
-            buf.into()
-        };
-        let witness_for_digest = witness
-            .clone()
-            .as_builder()
-            .lock(Some(zero_lock).pack())
-            .build();
+//         // digest the first witness
+//         let witness = WitnessArgs::default();
+//         let zero_lock: Bytes = {
+//             let mut buf = Vec::new();
+//             buf.resize(SIGNATURE_SIZE, 0);
+//             buf.into()
+//         };
+//         let witness_for_digest = witness
+//             .clone()
+//             .as_builder()
+//             .lock(Some(zero_lock).pack())
+//             .build();
 
-        let witness_len = witness_for_digest.as_bytes().len() as u64;
-        blake2b.update(&witness_len.to_le_bytes());
-        blake2b.update(&witness_for_digest.as_bytes());
-        blake2b.finalize(&mut message);
-        let message = H256::from(message);
-        let sig = key.sign_recoverable(&message).expect("sign");
-        signed_witnesses.push(
-            witness
-                .clone()
-                .as_builder()
-                .lock(Some(Bytes::from(sig.serialize())).pack())
-                .build()
-                .as_bytes()
-                .pack(),
-        );
-        for i in 1..witnesses_len {
-            signed_witnesses.push(tx.witnesses().get(i).unwrap());
-        }
-        tx.as_advanced_builder()
-            .set_witnesses(signed_witnesses)
-            .build()
-    }
+//         let witness_len = witness_for_digest.as_bytes().len() as u64;
+//         blake2b.update(&witness_len.to_le_bytes());
+//         blake2b.update(&witness_for_digest.as_bytes());
+//         blake2b.finalize(&mut message);
+//         let message = H256::from(message);
+//         let sig = key.sign_recoverable(&message).expect("sign");
+//         signed_witnesses.push(
+//             witness
+//                 .clone()
+//                 .as_builder()
+//                 .lock(Some(Bytes::from(sig.serialize())).pack())
+//                 .build()
+//                 .as_bytes()
+//                 .pack(),
+//         );
+//         for i in 1..witnesses_len {
+//             signed_witnesses.push(tx.witnesses().get(i).unwrap());
+//         }
+//         tx.as_advanced_builder()
+//             .set_witnesses(signed_witnesses)
+//             .build()
+//     }
 
-    fn blake160(data: &[u8]) -> [u8; 20] {
-        let mut buf = [0u8; 20];
-        let hash = blake2b_256(data);
-        buf.clone_from_slice(&hash[..20]);
-        buf
-    }
-}
+//     fn blake160(data: &[u8]) -> [u8; 20] {
+//         let mut buf = [0u8; 20];
+//         let hash = blake2b_256(data);
+//         buf.clone_from_slice(&hash[..20]);
+//         buf
+//     }
+// }
