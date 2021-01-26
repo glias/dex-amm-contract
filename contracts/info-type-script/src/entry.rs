@@ -34,15 +34,6 @@ default_alloc!(4 * 1024, 2048 * 1024, 64);
 pub fn main() -> Result<(), Error> {
     let info_type_code_hash = load_script()?.code_hash().unpack();
 
-    if QueryIter::new(load_cell, Source::Output).count() == 2 {
-        verify_info_creation(&load_cell(0, Source::Output)?, info_type_code_hash)?;
-        return Ok(());
-    }
-
-    let info_in_data = InfoCellData::from_raw(&load_cell_data(0, Source::Input)?)?;
-    let pool_in_cell = load_cell(1, Source::Input)?;
-    let pool_in_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Input)?)?;
-
     let input_info_cell_count = QueryIter::new(load_cell, Source::Input)
         .filter(|cell| {
             cell.type_().to_opt().map_or_else(
@@ -51,6 +42,7 @@ pub fn main() -> Result<(), Error> {
             )
         })
         .count();
+
     let output_info_cell_count = QueryIter::new(load_cell, Source::Output)
         .filter(|cell| {
             cell.type_().to_opt().map_or_else(
@@ -60,9 +52,17 @@ pub fn main() -> Result<(), Error> {
         })
         .count();
 
+    if input_info_cell_count == 0 && output_info_cell_count == 1 {
+        verify_info_creation(&load_cell(0, Source::Output)?, info_type_code_hash)?;
+        return Ok(());
+    }
     if input_info_cell_count != 1 || output_info_cell_count != 1 {
         return Err(Error::MoreThanOneLiquidityPool);
     }
+
+    let info_in_data = InfoCellData::from_raw(&load_cell_data(0, Source::Input)?)?;
+    let pool_in_cell = load_cell(1, Source::Input)?;
+    let pool_in_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Input)?)?;
 
     if (pool_in_cell.capacity().unpack() as u128) != POOL_BASE_CAPACITY + info_in_data.ckb_reserve {
         return Err(Error::CKBReserveAmountDiff);
