@@ -34,15 +34,6 @@ default_alloc!(4 * 1024, 2048 * 1024, 64);
 pub fn main() -> Result<(), Error> {
     let info_type_code_hash = load_script()?.code_hash().unpack();
 
-    if QueryIter::new(load_cell, Source::Output).count() == 2 {
-        verify_info_creation(&load_cell(0, Source::Output)?, info_type_code_hash)?;
-        return Ok(());
-    }
-
-    let info_in_data = InfoCellData::from_raw(&load_cell_data(0, Source::Input)?)?;
-    let pool_in_cell = load_cell(1, Source::Input)?;
-    let pool_in_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Input)?)?;
-
     let input_info_cell_count = QueryIter::new(load_cell, Source::Input)
         .filter(|cell| {
             cell.type_().to_opt().map_or_else(
@@ -51,6 +42,7 @@ pub fn main() -> Result<(), Error> {
             )
         })
         .count();
+
     let output_info_cell_count = QueryIter::new(load_cell, Source::Output)
         .filter(|cell| {
             cell.type_().to_opt().map_or_else(
@@ -60,9 +52,17 @@ pub fn main() -> Result<(), Error> {
         })
         .count();
 
+    if input_info_cell_count == 0 && output_info_cell_count == 1 {
+        verify_info_creation(&load_cell(0, Source::Output)?, info_type_code_hash)?;
+        return Ok(());
+    }
     if input_info_cell_count != 1 || output_info_cell_count != 1 {
         return Err(Error::MoreThanOneLiquidityPool);
     }
+
+    let info_in_data = InfoCellData::from_raw(&load_cell_data(0, Source::Input)?)?;
+    let pool_in_cell = load_cell(1, Source::Input)?;
+    let pool_in_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Input)?)?;
 
     if (pool_in_cell.capacity().unpack() as u128) != POOL_BASE_CAPACITY + info_in_data.ckb_reserve {
         return Err(Error::CKBReserveAmountDiff);
@@ -86,49 +86,36 @@ pub fn verify_info_creation(
 ) -> Result<(), Error> {
     verify_type_id()?;
 
-    let input_info_cell_count = QueryIter::new(load_cell, Source::Input)
+    let info_out_lock_args: Vec<u8> = info_out_cell.lock().args().unpack();
+    let pool_type_hash = get_cell_type_hash!(1, Source::Output);
+    let output_info_lock_count = QueryIter::new(load_cell, Source::Output)
         .filter(|cell| {
-            cell.type_()
-                .to_opt()
-                .map_or_else(|| false, |s| s.code_hash().unpack() == info_type_code_hash)
+            cell.lock().code_hash().unpack().as_ref() == hex::decode(INFO_LOCK_CODE_HASH).unwrap()
         })
         .count();
 
-    if input_info_cell_count == 0 {
-        let info_out_lock_args: Vec<u8> = info_out_cell.lock().args().unpack();
-        let pool_type_hash = get_cell_type_hash!(1, Source::Output);
-        let output_info_cell_count = QueryIter::new(load_cell, Source::Output)
-            .filter(|cell| {
-                cell.lock().code_hash().unpack().as_ref()
-                    == hex::decode(INFO_LOCK_CODE_HASH).unwrap()
-            })
-            .count();
+    if output_info_lock_count != 2 {
+        return Err(Error::InfoCreationOutputCellCountMismatch);
+    }
 
-        if output_info_cell_count != 2 {
-            return Err(Error::InfoCreationOutputCellCountMismatch);
-        }
+    if info_out_cell.lock().hash_type() != HashType::Data.into() {
+        return Err(Error::InfoCellHashTypeMismatch);
+    }
 
-        if info_out_cell.lock().hash_type() != HashType::Data.into() {
-            return Err(Error::InfoCellHashTypeMismatch);
-        }
+    if info_out_lock_args[0..32] != blake2b!("ckb", pool_type_hash) {
+        return Err(Error::InfoLockArgsFrontHalfMismatch);
+    }
 
-        if info_out_lock_args[0..32] != blake2b!("ckb", pool_type_hash) {
-            return Err(Error::InfoLockArgsFrontHalfMismatch);
-        }
+    if info_out_lock_args[32..64] != get_cell_type_hash!(0, Source::Output) {
+        return Err(Error::InfoLockArgsSecondHalfMismatch);
+    }
 
-        if info_out_lock_args[32..64] != get_cell_type_hash!(0, Source::Output) {
-            return Err(Error::InfoLockArgsSecondHalfMismatch);
-        }
+    if load_cell_lock_hash(0, Source::Output)? != load_cell_lock_hash(1, Source::Output)? {
+        return Err(Error::InfoCreationCellLockHashMismatch);
+    }
 
-        if load_cell_lock_hash(0, Source::Output)? != load_cell_lock_hash(1, Source::Output)? {
-            return Err(Error::InfoCreationCellLockHashMismatch);
-        }
-
-        if load_cell_data(1, Source::Output)?.len() < 16 {
-            return Err(Error::CellDataLenTooShort);
-        }
-    } else {
-        return Err(Error::InfoCreationError);
+    if load_cell_data(1, Source::Output)?.len() < 16 {
+        return Err(Error::CellDataLenTooShort);
     }
 
     Ok(())
