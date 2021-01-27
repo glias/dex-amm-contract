@@ -1,5 +1,3 @@
-use core::cmp::{Eq, PartialEq};
-use core::convert::TryFrom;
 use core::result::Result;
 
 use ckb_std::error::SysError as Error;
@@ -10,33 +8,6 @@ const LIQUIDITY_ORDER_ARGS_LEN: usize = 113;
 const SWAP_ORDER_ARGS_LEN: usize = 105;
 const INFO_CELL_DATA_LEN: usize = 80;
 const SUDT_AMOUNT_DATA_LEN: usize = 16;
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum OrderKind {
-    SellCKB,
-    BuyCKB,
-}
-
-impl TryFrom<u8> for OrderKind {
-    type Error = Error;
-
-    fn try_from(input: u8) -> Result<OrderKind, Error> {
-        match input {
-            0 => Ok(OrderKind::SellCKB),
-            1 => Ok(OrderKind::BuyCKB),
-            _ => Err(Error::Encoding),
-        }
-    }
-}
-
-impl Into<u8> for OrderKind {
-    fn into(self) -> u8 {
-        match self {
-            OrderKind::SellCKB => 0,
-            OrderKind::BuyCKB => 1,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct LiquidityRequestLockArgs {
@@ -125,7 +96,7 @@ impl InfoCellData {
         let sudt_reserve = decode_u128(&cell_raw_data[16..32])?;
         let total_liquidity = decode_u128(&cell_raw_data[32..48])?;
         let mut liquidity_sudt_type_hash = [0u8; 32];
-        liquidity_sudt_type_hash.copy_from_slice(&cell_raw_data[48..68]);
+        liquidity_sudt_type_hash.copy_from_slice(&cell_raw_data[48..80]);
 
         Ok(InfoCellData {
             ckb_reserve,
