@@ -363,8 +363,21 @@ pub fn build_test_context(
     (context, tx)
 }
 
-fn tx_error(error_code: i8, input_index: usize) -> TransactionScriptError {
-    ScriptError::ValidationFailure(error_code).input_lock_script(input_index)
+pub fn tx_error(
+    error_code: i8,
+    index: usize,
+    is_input: bool,
+    is_lockscript: bool,
+) -> TransactionScriptError {
+    if is_input && is_lockscript {
+        ScriptError::ValidationFailure(error_code).input_lock_script(index)
+    } else if is_input && !is_lockscript {
+        ScriptError::ValidationFailure(error_code).input_type_script(index)
+    } else if !is_input && !is_lockscript {
+        ScriptError::ValidationFailure(error_code).output_type_script(index)
+    } else {
+        unreachable!()
+    }
 }
 
 struct DynLock;

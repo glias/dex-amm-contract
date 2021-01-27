@@ -74,6 +74,13 @@ impl SudtCell {
             data:     sudt_data.as_bytes(),
         }
     }
+
+    pub fn new_unchecked(capacity: u64, data: Bytes) -> Self {
+        SudtCell {
+            capacity: Capacity::shannons(capacity),
+            data,
+        }
+    }
 }
 
 pub struct FreeCell {

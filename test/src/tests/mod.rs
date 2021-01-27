@@ -7,6 +7,8 @@ const MAX_CYCLES: u64 = 10000_0000;
 
 use std::collections::HashMap;
 
+use ckb_testtool::builtin::ALWAYS_SUCCESS;
+use ckb_testtool::context::Context;
 use ckb_tool::ckb_error::assert_error_eq;
 use ckb_tool::ckb_types::bytes::Bytes;
 use ckb_tool::ckb_types::packed::*;
@@ -19,7 +21,15 @@ use crate::{cell_builder::*, tx_builder::*};
 use crate::{test_contract, Loader};
 
 lazy_static::lazy_static! {
-    static ref SUDT_TYPE_HASH: [u8; 32] = [1u8; 32];
+    static ref SUDT_TYPE_HASH: [u8; 32] = {
+        let mut ctx = Context::default();
+        let always_success_out_point = ctx.deploy_cell(ALWAYS_SUCCESS.clone());
+        ctx.build_script(&always_success_out_point, Default::default())
+            .unwrap()
+            .calc_script_hash()
+            .unpack()
+
+    };
     static ref INFO_TYPE_SCRIPT: Bytes = Loader::default().load_binary("info-type-script");
     static ref INFO_LOCK_SCRIPT: Bytes = Loader::default().load_binary("info-lock-script");
 }
@@ -43,7 +53,8 @@ macro_rules! test_contract {
     };
 }
 
-fn info_cell_type_hash(args: Bytes) -> [u8; 32] {
+fn info_cell_type_hash(idx: usize) -> [u8; 32] {
+    let args = info_type_args(idx);
     Script::new_builder()
         .code_hash(CellOutput::calc_data_hash(&INFO_TYPE_SCRIPT))
         .hash_type(Byte::new(0))
@@ -51,4 +62,14 @@ fn info_cell_type_hash(args: Bytes) -> [u8; 32] {
         .build()
         .calc_script_hash()
         .unpack()
+}
+
+fn info_type_args(idx: usize) -> Bytes {
+    let mut ctx = Context::default();
+    let always_success_out_point = ctx.deploy_cell(ALWAYS_SUCCESS.clone());
+    let args = Bytes::from(idx.to_le_bytes().to_vec());
+    ctx.build_script(&always_success_out_point, args)
+        .unwrap()
+        .calc_script_hash()
+        .as_bytes()
 }
