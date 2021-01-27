@@ -20,6 +20,8 @@ use share::blake2b;
 use crate::{cell_builder::*, tx_builder::*};
 use crate::{test_contract, Loader};
 
+const POOL_BASE_CAPACITY: u64 = 16_200_000_000;
+
 lazy_static::lazy_static! {
     static ref SUDT_TYPE_HASH: [u8; 32] = {
         let mut ctx = Context::default();

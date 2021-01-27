@@ -22,3 +22,9 @@ impl Pack<basic::Byte32> for [u8; 32] {
         basic::Byte32::new_unchecked(tmp)
     }
 }
+
+impl Pack<basic::Uint8> for u8 {
+    fn pack(&self) -> basic::Uint8 {
+        basic::Uint8::new_unchecked(Bytes::from(self.to_le_bytes().to_vec()))
+    }
+}

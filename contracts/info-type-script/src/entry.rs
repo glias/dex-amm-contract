@@ -104,9 +104,6 @@ pub fn verify_info_creation(info_out_cell: &CellOutput) -> Result<(), Error> {
         return Err(Error::InfoCellHashTypeMismatch);
     }
 
-    let tmp = get_cell_type_hash!(0, Source::Output);
-    debug!("{:?}", tmp);
-
     if info_out_lock_args[0..32] != blake2b!("ckb", pool_type_hash) {
         return Err(Error::InfoLockArgsFrontHalfMismatch);
     }

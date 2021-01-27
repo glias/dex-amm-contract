@@ -247,3 +247,136 @@ test_contract!(
     false,
     "info-typescript-sim"
 );
+
+// #####################
+// Initial Mint Tests
+// #####################
+test_contract!(
+    initial_mint_success,
+    {
+        let mut hash = blake2b!("ckb", *SUDT_TYPE_HASH).to_vec();
+        let mut hash_1 = info_cell_type_hash(0).to_vec();
+        hash.append(&mut hash_1);
+        assert_eq!(hash.len(), 64);
+
+        let input_0 = Inputs::new_info(
+            InfoCellBuilder::default()
+                .capacity(1000)
+                .ckb_reserve(500)
+                .sudt_reserve(700)
+                .liquidity_sudt_type_hash(*SUDT_TYPE_HASH)
+                .build(),
+        )
+        .custom_lock_args(Bytes::from(hash.clone()));
+
+        // pool_in.capcity = POOL_BASE_CAPCITY + info_in.ckb_reserve
+        // pool_in.amount = info_in.sudt_reserve
+        let input_1 = Inputs::new_pool(SudtCell::new(POOL_BASE_CAPACITY + 500, 700))
+            .custom_lock_args(Bytes::from(hash.clone()));
+        let input_2 = Inputs::new_matcher(FreeCell::new(100));
+
+        let liquidity_in_lock_args = LiquidityRequestLockArgsBuilder::default()
+            .user_lock_hash(*SUDT_TYPE_HASH)
+            .version(1)
+            .sudt_min(0)
+            .ckb_min(0)
+            .info_type_hash(info_cell_type_hash(0))
+            .tips(0)
+            .tips_sudt(0)
+            .build();
+        let input_3 = Inputs::new_liquidity(RequestCell::new(100, 200))
+            .custom_lock_args(liquidity_in_lock_args.as_bytes());
+
+        let output_0 = Outputs::new_info(
+            InfoCellBuilder::default()
+                .capacity(1000)
+                .ckb_reserve(500)
+                .sudt_reserve(500)
+                .liquidity_sudt_type_hash(*SUDT_TYPE_HASH)
+                .build(),
+        )
+        .custom_lock_args(Bytes::from(hash.clone()));
+        let output_1 =
+            Outputs::new_pool(SudtCell::new(21000, 1500)).custom_lock_args(Bytes::from(hash));
+        let output_2 = Outputs::new_matcher(FreeCell::new(150));
+        let output_3 = Outputs::new_sudt(SudtCell::new(100, 100));
+
+        let (mut context, tx) = build_test_context(
+            vec![input_0, input_1, input_2, input_3],
+            vec![output_0, output_1, output_2, output_3,]
+        );
+        let tx = context.complete_tx(tx);
+
+        // let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
+        // assert_error_eq!(err, tx_error(, 0));
+
+        context
+            .verify_tx(&tx, MAX_CYCLES)
+            .expect("pass verification");
+
+        (context, tx)
+    },
+    false,
+    "info-typescript-sim"
+);
+
+////////////////////////////////////////////////////////////////
+test_contract!(
+    testaaa,
+    {
+        let input_0 = Inputs::new_info(
+            InfoCell::new_unchecked(25000000000, Bytes::from(hex::decode("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000addc3b7a6e0f3cb4416f3f80fabfe8d6499e0efb6ef7cc51f2b8852dbd6387c").unwrap()))
+        )
+        .custom_lock_args(Bytes::from(hex::decode("bfb315567328439666a3a56a3f5cf7ea671142c24189404c306c5ffd5a3a11d0deabe540d91bbe1e83a43c81495a977bb4add1133d120cc236c9807061848542").unwrap()));
+        let input_1 = Inputs::new_pool(SudtCell::new(18600000000, 0))
+        .custom_type_args(Bytes::from(hex::decode("6fe3733cd9df22d05b8a70f7b505d0fb67fb58fb88693217135ff5079713e902").unwrap()))
+            .custom_lock_args(Bytes::from(hex::decode("bfb315567328439666a3a56a3f5cf7ea671142c24189404c306c5ffd5a3a11d0deabe540d91bbe1e83a43c81495a977bb4add1133d120cc236c9807061848542").unwrap()));
+        let input_2 = Inputs::new_matcher(FreeCell::new(500000000000));
+        let input_3 = Inputs::new_liquidity(RequestCell::new_unchecked(
+            24500000000,
+            Bytes::from(hex::decode("00ca9a3b000000000000000000000000").unwrap()),
+        ))
+            .custom_type_args(Bytes::from(hex::decode("6fe3733cd9df22d05b8a70f7b505d0fb67fb58fb88693217135ff5079713e902").unwrap()))
+            .custom_lock_args(Bytes::from(hex::decode("6fe3733cd9df22d05b8a70f7b505d0fb67fb58fb88693217135ff5079713e90200000000000000000000000000000000000000000000000000deabe540d91bbe1e83a43c81495a977bb4add1133d120cc236c9807061848542000000000000000000000000000000000000000000000000").unwrap()));
+
+        let output_0 = Outputs::new_info(InfoCell::new_unchecked(25000000000, Bytes::from(hex::decode("00fb661e02000000000000000000000000ca9a3b00000000000000000000000000ca9a3b0000000000000000000000000addc3b7a6e0f3cb4416f3f80fabfe8d6499e0efb6ef7cc51f2b8852dbd6387c").unwrap())))
+            .custom_lock_args(Bytes::from(hex::decode("bfb315567328439666a3a56a3f5cf7ea671142c24189404c306c5ffd5a3a11d0deabe540d91bbe1e83a43c81495a977bb4add1133d120cc236c9807061848542").unwrap()));
+        let output_1 = Outputs::new_pool(SudtCell::new_unchecked(27700000000, Bytes::from(hex::decode("00ca9a3b000000000000000000000000").unwrap())))
+            .custom_type_args(Bytes::from(hex::decode("6fe3733cd9df22d05b8a70f7b505d0fb67fb58fb88693217135ff5079713e902").unwrap()))
+            .custom_lock_args(Bytes::from(hex::decode("bfb315567328439666a3a56a3f5cf7ea671142c24189404c306c5ffd5a3a11d0deabe540d91bbe1e83a43c81495a977bb4add1133d120cc236c9807061848542").unwrap()));
+        let output_2 = Outputs::new_matcher(FreeCell::new(500000000000));
+        let output_3 = Outputs::new_sudt(SudtCell::new_unchecked(
+            15400000000,
+            Bytes::from(hex::decode("51facdb3000000000000000000000000").unwrap()),
+        ));
+
+        let (mut context, tx) = build_test_context(vec![input_0, input_1, input_2, input_3], vec![
+            output_0, output_1, output_2, output_3,
+        ]);
+        let tx = context.complete_tx(tx);
+
+        // let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
+        // assert_error_eq!(err, tx_error(, 0));
+
+        context
+            .verify_tx(&tx, MAX_CYCLES)
+            .expect("pass verification");
+
+        (context, tx)
+    },
+    false,
+    "info-typescript-sim"
+);
+
+#[test]
+fn mol() {
+    let a = InfoCellBuilder::default()
+        .capacity(1000)
+        .ckb_reserve(500)
+        .sudt_reserve(700)
+        .liquidity_sudt_type_hash(*SUDT_TYPE_HASH)
+        .build()
+        .data;
+
+    println!("{:?}", a.pack());
+}

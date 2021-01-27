@@ -17,13 +17,16 @@ use ckb_x64_simulator::RunningSetup;
 use molecule::prelude::*;
 use serde_json::to_string_pretty;
 
-use crate::cell_builder::{FreeCell, InfoCell, SudtCell};
+use crate::cell_builder::{FreeCell, InfoCell, RequestCell, SudtCell};
 use crate::{Loader, TX_FOLDER};
 
 pub enum InputCell {
     Sudt(SudtCell),
     Info(InfoCell),
     Matcher(FreeCell),
+    Liquidity(RequestCell),
+    Swap(RequestCell),
+    Pool(SudtCell),
 }
 
 pub enum OutputCell {
@@ -51,8 +54,16 @@ impl Inputs {
         Self::inner_new(InputCell::Sudt(cell))
     }
 
-    pub fn new_matche(cell: FreeCell) -> Self {
+    pub fn new_matcher(cell: FreeCell) -> Self {
         Self::inner_new(InputCell::Matcher(cell))
+    }
+
+    pub fn new_pool(cell: SudtCell) -> Self {
+        Self::inner_new(InputCell::Pool(cell))
+    }
+
+    pub fn new_liquidity(cell: RequestCell) -> Self {
+        Self::inner_new(InputCell::Liquidity(cell))
     }
 
     fn inner_new(cell: InputCell) -> Self {
@@ -146,7 +157,19 @@ fn build_tx(
     let info_type_bin: Bytes = Loader::default().load_binary("info-type-script");
     let info_type_out_point = context.deploy_cell(info_type_bin);
     let info_type_dep = CellDep::new_builder()
-        .out_point(info_lock_out_point.clone())
+        .out_point(info_type_out_point.clone())
+        .build();
+
+    let liquidity_lock_bin: Bytes = Loader::default().load_binary("liquidity-lock-script");
+    let liquidity_lock_out_point = context.deploy_cell(liquidity_lock_bin);
+    let liquidity_lock_dep = CellDep::new_builder()
+        .out_point(liquidity_lock_out_point.clone())
+        .build();
+
+    let swap_lock_bin: Bytes = Loader::default().load_binary("swap-order-lock-script");
+    let swap_lock_out_point = context.deploy_cell(swap_lock_bin);
+    let swap_lock_dep = CellDep::new_builder()
+        .out_point(swap_lock_out_point.clone())
         .build();
 
     // Deploy always sucess script
@@ -195,6 +218,14 @@ fn build_tx(
             None => sudt_type_script.clone(),
         };
 
+        let sudt_type_script = match input.custom_type_args.clone() {
+            Some(type_args) => {
+                let type_script = sudt_type_script.clone();
+                type_script.as_builder().args(type_args.pack()).build()
+            }
+            None => sudt_type_script.clone(),
+        };
+
         match input.cell {
             InputCell::Info(cell) => {
                 let lock_args = input.custom_lock_args.expect("info input lock args");
@@ -231,7 +262,29 @@ fn build_tx(
                         .type_(Some(sudt_type_script.clone()).pack())
                         .lock(user_lock_script)
                         .build(),
-                    Bytes::new(),
+                    cell.data,
+                );
+
+                let input_cell = CellInput::new_builder()
+                    .previous_output(input_out_point)
+                    .build();
+
+                cell_deps.extend(input.cell_deps.unwrap_or_default());
+                inputs.push(input_cell);
+                witnesses.push(input.witness.unwrap_or_default());
+            }
+            InputCell::Pool(cell) => {
+                let lock_args = input.custom_lock_args.expect("pool input lock args");
+                let info_lock_script = context
+                    .build_script(&info_lock_out_point, lock_args)
+                    .expect("info lock script");
+                let input_out_point = context.create_cell(
+                    CellOutput::new_builder()
+                        .capacity(cell.capacity.pack())
+                        .type_(Some(sudt_type_script.clone()).pack())
+                        .lock(info_lock_script)
+                        .build(),
+                    cell.data,
                 );
 
                 let input_cell = CellInput::new_builder()
@@ -249,6 +302,52 @@ fn build_tx(
                         .lock(user_lock_script)
                         .build(),
                     Bytes::new(),
+                );
+
+                let input_cell = CellInput::new_builder()
+                    .previous_output(input_out_point)
+                    .build();
+
+                cell_deps.extend(input.cell_deps.unwrap_or_default());
+                inputs.push(input_cell);
+                witnesses.push(input.witness.unwrap_or_default());
+            }
+            InputCell::Liquidity(cell) => {
+                let lock_args = input.custom_lock_args.expect("liquidity input lock args");
+                let liquidity_lock = context
+                    .build_script(&liquidity_lock_out_point, lock_args)
+                    .expect("liquidity lock script");
+
+                let input_out_point = context.create_cell(
+                    CellOutput::new_builder()
+                        .capacity(cell.capacity.pack())
+                        .lock(liquidity_lock)
+                        .type_(Some(sudt_type_script).pack())
+                        .build(),
+                    cell.data,
+                );
+
+                let input_cell = CellInput::new_builder()
+                    .previous_output(input_out_point)
+                    .build();
+
+                cell_deps.extend(input.cell_deps.unwrap_or_default());
+                inputs.push(input_cell);
+                witnesses.push(input.witness.unwrap_or_default());
+            }
+            InputCell::Swap(cell) => {
+                let lock_args = input.custom_lock_args.expect("swap input lock args");
+                let swap_lock = context
+                    .build_script(&swap_lock_out_point, lock_args)
+                    .expect("swap lock script");
+
+                let input_out_point = context.create_cell(
+                    CellOutput::new_builder()
+                        .capacity(cell.capacity.pack())
+                        .lock(swap_lock)
+                        .type_(Some(sudt_type_script).pack())
+                        .build(),
+                    cell.data,
                 );
 
                 let input_cell = CellInput::new_builder()
@@ -348,6 +447,8 @@ fn build_tx(
         .outputs_data(outputs_data.pack())
         .cell_dep(info_lock_dep)
         .cell_dep(info_type_dep)
+        .cell_dep(liquidity_lock_dep)
+        .cell_dep(swap_lock_dep)
         .cell_dep(always_success_dep)
         .cell_deps(cell_deps)
         .witnesses(witnesses.pack())

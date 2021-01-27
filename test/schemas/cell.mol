@@ -6,3 +6,22 @@ struct InfoCellData {
     total_liquidity: Uint128,
     liquidity_sudt_type_hash: Byte32,
 }
+
+struct LiquidityRequestLockArgs {
+    user_lock_hash: Byte32,
+    version: Uint8,
+    sudt_min: Uint128,
+    ckb_min: Uint64,
+    info_type_hash: Byte32,
+    tips: Uint64,
+    tips_sudt: Uint128,
+}
+
+struct SwapRequestLockArgs {
+    user_lock_hash: Byte32,
+    version: Uint8,
+    amount_out_min: Uint128,
+    sudt_type_hash: Byte32,
+    tips: Uint64,
+    tips_sudt: Uint128,
+}

@@ -58,5 +58,7 @@ fn main() -> Result<(), Error> {
         return Err(Error::InfoLockArgsSecondHalfMismatch);
     }
 
+    // 0xbfb315567328439666a3a56a3f5cf7ea671142c24189404c306c5ffd5a3a11d0
+    // 0xdeabe540d91bbe1e83a43c81495a977bb4add1133d120cc236c9807061848542
     Ok(())
 }
