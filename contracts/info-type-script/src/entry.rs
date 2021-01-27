@@ -42,7 +42,6 @@ pub fn main() -> Result<(), Error> {
             )
         })
         .count();
-
     let output_info_cell_count = QueryIter::new(load_cell, Source::Output)
         .filter(|cell| {
             cell.type_().to_opt().map_or_else(
@@ -53,9 +52,10 @@ pub fn main() -> Result<(), Error> {
         .count();
 
     if input_info_cell_count == 0 && output_info_cell_count == 1 {
-        verify_info_creation(&load_cell(0, Source::Output)?, info_type_code_hash)?;
+        verify_info_creation(&load_cell(0, Source::Output)?)?;
         return Ok(());
     }
+
     if input_info_cell_count != 1 || output_info_cell_count != 1 {
         return Err(Error::MoreThanOneLiquidityPool);
     }
@@ -66,7 +66,9 @@ pub fn main() -> Result<(), Error> {
 
     if (pool_in_cell.capacity().unpack() as u128) != POOL_BASE_CAPACITY + info_in_data.ckb_reserve {
         return Err(Error::CKBReserveAmountDiff);
-    } else if pool_in_data.sudt_amount != info_in_data.sudt_reserve {
+    }
+
+    if pool_in_data.sudt_amount != info_in_data.sudt_reserve {
         return Err(Error::SUDTReserveAmountDiff);
     }
 
@@ -80,10 +82,7 @@ pub fn main() -> Result<(), Error> {
 }
 
 #[allow(clippy::string_lit_as_bytes)]
-pub fn verify_info_creation(
-    info_out_cell: &CellOutput,
-    info_type_code_hash: [u8; 32],
-) -> Result<(), Error> {
+pub fn verify_info_creation(info_out_cell: &CellOutput) -> Result<(), Error> {
     verify_type_id()?;
 
     let info_out_lock_args: Vec<u8> = info_out_cell.lock().args().unpack();
