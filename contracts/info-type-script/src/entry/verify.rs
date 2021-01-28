@@ -1,5 +1,6 @@
 use core::convert::TryInto;
 use core::result::Result;
+use alloc::vec::Vec;
 
 use num_bigint::{BigInt, BigUint};
 use num_traits::identities::Zero;
@@ -50,8 +51,9 @@ pub fn liquidity_tx_verification() -> Result<(), Error> {
         .enumerate()
         .skip(3)
     {
-        let liquidity_order_lock_args =
-            LiquidityRequestLockArgs::from_raw(&liquidity_order_cell.lock().args().as_slice())?;
+        let raw_lock_args: Vec<u8> = liquidity_order_cell.lock().args().unpack();
+        let liquidity_order_lock_args = 
+            LiquidityRequestLockArgs::from_raw(&raw_lock_args)?;
         if liquidity_order_lock_args.version != INFO_VERSION {
             return Err(Error::VersionDiff);
         }
@@ -209,7 +211,8 @@ fn verify_initial_mint(
     }
 
     let order_cell = load_cell(3, Source::Input)?;
-    let order_lock_args = LiquidityRequestLockArgs::from_raw(order_cell.lock().args().as_slice())?;
+    let raw_lock_args: Vec<u8> = order_cell.lock().args().unpack();
+    let order_lock_args = LiquidityRequestLockArgs::from_raw(&raw_lock_args)?;
     let order_data = SUDTAmountData::from_raw(&load_cell_data(3, Source::Input)?)?;
     let liquidity_sudt_data = SUDTAmountData::from_raw(&load_cell_data(3, Source::Output)?)?;
 
@@ -255,8 +258,9 @@ fn mint_liquidity(
     let relative_index = liquidity_cell_index - LIQUIDITY_CELL_BASE_INDEX;
     let liquidity_index = relative_index * 2 + LIQUIDITY_CELL_BASE_INDEX;
 
+    let raw_lock_args: Vec<u8> = liquidity_order_cell.lock().args().unpack();
     let liquidity_order_lock_args =
-        LiquidityRequestLockArgs::from_raw(liquidity_order_cell.lock().args().as_slice())?;
+        LiquidityRequestLockArgs::from_raw(&raw_lock_args)?;
     let change_cell = load_cell(liquidity_index + 1, Source::Output)?;
     let change_lock_hash = load_cell_lock_hash(liquidity_index + 1, Source::Output)?;
 
@@ -368,8 +372,9 @@ fn burn_liquidity(
     let sudt_out = load_cell(sudt_index, Source::Output)?;
     let ckb_out = load_cell(sudt_index + 1, Source::Output)?;
     let sudt_data = load_cell_data(index, Source::Output)?;
+    let raw_lock_args: Vec<u8> = liquidity_order_cell.lock().args().unpack();
     let liquidity_lock_args =
-        LiquidityRequestLockArgs::from_raw(liquidity_order_cell.lock().args().as_slice())?;
+        LiquidityRequestLockArgs::from_raw(&raw_lock_args)?;
 
     if get_cell_type_hash!(sudt_index, Source::Output) != get_cell_type_hash!(1, Source::Input) {
         return Err(Error::SUDTTypeHashMismatch);
