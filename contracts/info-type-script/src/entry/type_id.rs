@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use share::blake2b;
 use share::ckb_std::{
     ckb_constants::Source,
@@ -13,7 +15,8 @@ pub fn verify_type_id() -> Result<(), Error> {
     // TYPE_ID script should only accept one argument,
     // which is the hash of all inputs when creating
     // the cell.
-    if load_script()?.args().len() != 32 {
+    let script_args: Vec<u8> = load_script()?.args().unpack();
+    if script_args.len() != 32 {
         return Err(Error::InvalidInfoTypeArgsLen);
     }
 
@@ -56,7 +59,7 @@ pub fn verify_type_id() -> Result<(), Error> {
             first_output_index.to_le_bytes()
         );
 
-        if hash[..] != load_script()?.args().raw_data()[..] {
+        if hash[..] != script_args[..] {
             return Err(Error::InvalidTypeID);
         }
     }

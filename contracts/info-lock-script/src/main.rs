@@ -12,6 +12,7 @@
 
 mod error;
 
+use alloc::vec::Vec;
 use core::result::Result;
 
 use share::ckb_std;
@@ -46,14 +47,14 @@ fn main() -> Result<(), Error> {
     }
 
     let pool_type_hash = get_cell_type_hash!(1, Source::Input);
-    let self_args = load_script()?.args();
+    let self_args: Vec<u8> = load_script()?.args().unpack();
     let hash = blake2b!("ckb", pool_type_hash);
 
-    if hash != self_args.as_slice()[0..32] {
+    if hash != self_args[0..32] {
         return Err(Error::InfoLockArgsFrontHalfMismatch);
     }
 
-    if get_cell_type_hash!(0, Source::Input) != self_args.as_slice()[32..64] {
+    if get_cell_type_hash!(0, Source::Input) != self_args[32..64] {
         return Err(Error::InfoLockArgsSecondHalfMismatch);
     }
 

@@ -12,6 +12,7 @@
 
 mod error;
 
+use alloc::vec::Vec;
 use core::result::Result;
 
 use num_bigint::BigUint;
@@ -44,8 +45,9 @@ fn program_entry() -> i8 {
 }
 
 fn main() -> Result<(), Error> {
-    let script = load_script()?;
-    let lock_args = SwapRequestLockArgs::from_raw(script.args().as_slice())?;
+    let script_args: Vec<u8> = load_script()?.args().unpack();
+
+    let lock_args = SwapRequestLockArgs::from_raw(&script_args)?;
 
     for (idx, lock_hash) in QueryIter::new(load_cell_lock_hash, Source::Input).enumerate() {
         if lock_hash == lock_args.user_lock_hash {
