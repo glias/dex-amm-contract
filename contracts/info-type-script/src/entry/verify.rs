@@ -88,7 +88,7 @@ pub fn liquidity_tx_verification() -> Result<(), Error> {
                 &mut pool_sudt_paid,
                 &mut user_liquidity_burned,
             )?;
-        } else if liquidity_type_hash[0..20] == pool_type_hash[0..20] {
+        } else if liquidity_type_hash == pool_type_hash {
             mint_liquidity(
                 idx,
                 &info_in_data,

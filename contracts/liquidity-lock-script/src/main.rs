@@ -48,9 +48,9 @@ fn main() -> Result<(), Error> {
         }
     }
 
-    if get_cell_type_hash!(0, Source::Input) == load_script()?.args().as_slice()[65..85] {
+    if get_cell_type_hash!(0, Source::Input) == load_script()?.args().as_slice()[57..89] {
         return Ok(());
     }
-
+    
     Err(Error::NoInfoCell)
 }
