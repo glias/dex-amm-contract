@@ -180,6 +180,11 @@ impl InfoCellBuilder {
         self
     }
 
+    pub fn total_liquidity(mut self, total_liquidity: u128) -> Self {
+        self.total_liquidity = total_liquidity;
+        self
+    }
+
     pub fn liquidity_sudt_type_hash(mut self, liquidity_sudt_type_hash: [u8; 32]) -> Self {
         self.liquidity_sudt_type_hash = liquidity_sudt_type_hash;
         self
