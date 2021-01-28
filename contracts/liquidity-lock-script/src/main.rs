@@ -12,6 +12,7 @@
 
 mod error;
 
+use alloc::vec::Vec;
 use core::result::Result;
 
 use share::ckb_std::{
@@ -38,19 +39,18 @@ fn program_entry() -> i8 {
 }
 
 fn main() -> Result<(), Error> {
-    let self_hash = load_script()?.args();
+    let self_args: Vec<u8> = load_script()?.args().unpack();
 
     for (idx, lock_hash) in QueryIter::new(load_cell_lock_hash, Source::Input).enumerate() {
-        if lock_hash == self_hash.as_slice()[0..32]
-            && load_witness_args(idx, Source::Input)?.total_size() != 0
+        if lock_hash == self_args[0..32] && load_witness_args(idx, Source::Input)?.total_size() != 0
         {
             return Ok(());
         }
     }
 
-    if get_cell_type_hash!(0, Source::Input) == load_script()?.args().as_slice()[57..89] {
+    if get_cell_type_hash!(0, Source::Input) == self_args[57..89] {
         return Ok(());
     }
-    
+
     Err(Error::NoInfoCell)
 }
