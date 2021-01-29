@@ -21,6 +21,7 @@ use crate::error::Error;
 const INFO_VERSION: u8 = 1;
 
 const LIQUIDITY_CELL_BASE_INDEX: usize = 3;
+const ONE: u128 = 1;
 const THOUSAND: u128 = 1_000;
 const FEE_RATE: u128 = 997;
 const SUDT_CAPACITY: u64 = 15_400_000_000;
@@ -293,7 +294,7 @@ fn mint_liquidity(
             - change_cell.capacity().unpack() as u128;
 
         if BigUint::from(ckb_injected)
-            != (BigUint::from(sudt_injected) * ckb_reserve + sudt_reserve) / sudt_reserve
+            != (BigUint::from(sudt_injected) * ckb_reserve / sudt_reserve) + ONE
         {
             return Err(Error::LiquidityPoolTokenDiff);
         }
@@ -304,7 +305,7 @@ fn mint_liquidity(
         }
 
         if BigUint::from(user_liquidity)
-            != BigUint::from(sudt_injected) * total_liquidity / sudt_reserve
+            != (BigUint::from(sudt_injected) * total_liquidity / sudt_reserve) + ONE
         {
             return Err(Error::SUDTInjectAmountDiff);
         }
@@ -323,7 +324,7 @@ fn mint_liquidity(
         ckb_injected = (liquidity_order_cell.capacity().unpack() - SUDT_CAPACITY * 2) as u128;
 
         if BigUint::from(sudt_injected)
-            != (BigUint::from(ckb_injected) * sudt_reserve + ckb_reserve) / ckb_reserve
+            != (BigUint::from(ckb_injected) * sudt_reserve / ckb_reserve) + ONE
         {
             return Err(Error::LiquidityPoolTokenDiff);
         }
@@ -334,7 +335,7 @@ fn mint_liquidity(
         }
 
         if BigUint::from(user_liquidity)
-            != BigUint::from(ckb_injected) * total_liquidity / ckb_reserve
+            != (BigUint::from(ckb_injected) * total_liquidity / ckb_reserve) + ONE
         {
             return Err(Error::CKBInjectAmountDiff);
         }
@@ -410,11 +411,11 @@ fn burn_liquidity(
         return Err(Error::InvalidMinSUDTGot);
     }
 
-    if user_ckb_got != BigUint::from(ckb_reserve) * burned_liquidity / total_liquidity {
+    if user_ckb_got != (BigUint::from(ckb_reserve) * burned_liquidity / total_liquidity) + ONE {
         return Err(Error::CKBGotAmountDiff);
     }
 
-    if user_sudt_got != BigUint::from(sudt_reserve) * burned_liquidity / total_liquidity {
+    if user_sudt_got != (BigUint::from(sudt_reserve) * burned_liquidity / total_liquidity) + ONE {
         return Err(Error::SUDTGotAmountDiff);
     }
 
