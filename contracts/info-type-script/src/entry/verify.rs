@@ -292,8 +292,8 @@ fn mint_liquidity(
             - SUDT_CAPACITY as u128
             - change_cell.capacity().unpack() as u128;
 
-        if BigUint::from(sudt_reserve) * ckb_injected
-            != BigUint::from(sudt_injected) * ckb_reserve + sudt_reserve
+        if BigUint::from(ckb_injected)
+            != (BigUint::from(sudt_injected) * ckb_reserve + sudt_reserve) / sudt_reserve
         {
             return Err(Error::LiquidityPoolTokenDiff);
         }
@@ -303,8 +303,8 @@ fn mint_liquidity(
             return Err(Error::InvalidMinCkbInject);
         }
 
-        if BigUint::from(sudt_injected)
-            != BigUint::from(user_liquidity) * sudt_reserve / total_liquidity
+        if BigUint::from(user_liquidity)
+            != BigUint::from(sudt_injected) * total_liquidity / sudt_reserve
         {
             return Err(Error::SUDTInjectAmountDiff);
         }
@@ -322,8 +322,8 @@ fn mint_liquidity(
         sudt_injected = liquidity_order_data - decode_u128(&change_data[0..16])?;
         ckb_injected = (liquidity_order_cell.capacity().unpack() - SUDT_CAPACITY * 2) as u128;
 
-        if BigUint::from(ckb_reserve) * sudt_injected
-            != BigUint::from(ckb_injected) * sudt_reserve + ckb_reserve
+        if BigUint::from(sudt_injected)
+            != (BigUint::from(ckb_injected) * sudt_reserve + ckb_reserve) / ckb_reserve
         {
             return Err(Error::LiquidityPoolTokenDiff);
         }
@@ -333,8 +333,8 @@ fn mint_liquidity(
             return Err(Error::InvalidMinSUDTInject);
         }
 
-        if BigUint::from(ckb_injected)
-            != BigUint::from(user_liquidity) * ckb_reserve / total_liquidity
+        if BigUint::from(user_liquidity)
+            != BigUint::from(ckb_injected) * total_liquidity / ckb_reserve
         {
             return Err(Error::CKBInjectAmountDiff);
         }
@@ -373,18 +373,31 @@ fn burn_liquidity(
     let raw_lock_args: Vec<u8> = liquidity_order_cell.lock().args().unpack();
     let liquidity_lock_args = LiquidityRequestLockArgs::from_raw(&raw_lock_args)?;
 
+    if sudt_data.len() < 16 {
+        return Err(Error::SUDTCellDataLenTooShort);
+    }
+
+    if !load_cell_data(sudt_index + 1, Source::Output)?.is_empty() {
+        return Err(Error::CKBCellDataIsNotEmpty);
+    }
+
     if get_cell_type_hash!(sudt_index, Source::Output) != get_cell_type_hash!(1, Source::Input) {
         return Err(Error::SUDTTypeHashMismatch);
     }
 
     if load_cell_lock_hash(sudt_index, Source::Output)? != liquidity_lock_args.user_lock_hash {
-        return Err(Error::LiquidityArgsUserLockHashMismatch);
+        return Err(Error::AddLiquiditySUDTOutLockHashMismatch);
+    }
+
+    if load_cell_lock_hash(sudt_index + 1, Source::Output)? != liquidity_lock_args.user_lock_hash {
+        return Err(Error::AddLiquidityCkbOutLockHashMismatch);
     }
 
     let user_ckb_got = BigUint::from(sudt_out.capacity().unpack()) + ckb_out.capacity().unpack()
         - liquidity_order_cell.capacity().unpack();
-    let user_sudt_got = BigUint::from(decode_u128(&sudt_data)?);
+    let user_sudt_got = BigUint::from(decode_u128(&sudt_data[0..16])?);
     let burned_liquidity = liquidity_order_data;
+
     let min_ckb_got = BigUint::from(liquidity_lock_args.amount_0);
     let min_sudt_got = BigUint::from(liquidity_lock_args.amount_1);
     let zero = BigUint::zero();
@@ -414,5 +427,6 @@ fn burn_liquidity(
 
     debug_assert!(*pool_ckb_paid < ckb_reserve);
     debug_assert!(*pool_sudt_paid < sudt_reserve);
+    debug_assert!(*user_liquidity_burned < total_liquidity);
     Ok(())
 }

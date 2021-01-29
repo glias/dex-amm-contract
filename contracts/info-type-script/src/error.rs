@@ -45,13 +45,17 @@ pub enum Error {
     InAndOutLiquidityDiff,
     InvalidInfoInData,
     LiquiditySUDTTypeHashMismatch = 40,
-    LiquidityArgsUserLockHashMismatch,
+    AddLiquiditySUDTOutLockHashMismatch,
     InvalidMinCkbInject,
     InvalidMinSUDTInject,
     InvalidMinCkbGot,
     InvalidMinSUDTGot = 45,
     InvalidInfoTypeArgsLen,
     InputCellMoreThanOne,
+    AddLiquidityCkbOutLockHashMismatch,
+    SUDTCellDataLenTooShort,
+    CKBCellDataIsNotEmpty = 50,
+    LiquidityArgsUserLockHashMismatch
 }
 
 impl From<SysError> for Error {
