@@ -71,7 +71,10 @@ pub fn main() -> Result<(), Error> {
         return Err(Error::SUDTReserveAmountDiff);
     }
 
-    if get_cell_type_hash!(3, Source::Input) == info_in_data.liquidity_sudt_type_hash {
+    let req_type_hash = get_cell_type_hash!(3, Source::Input);
+    if req_type_hash == info_in_data.liquidity_sudt_type_hash
+        || req_type_hash == get_cell_type_hash!(1, Source::Input)
+    {
         verify::liquidity_tx_verification()?;
     } else {
         verify::swap_tx_verification()?;
