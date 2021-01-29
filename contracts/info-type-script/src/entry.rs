@@ -22,8 +22,7 @@ use type_id::verify_type_id;
 
 use crate::error::Error;
 
-// const INFO_LOCK_CODE_HASH: [u8; 32] = [2u8; 32];
-const POOL_BASE_CAPACITY: u128 = 16_200_000_000;
+const POOL_BASE_CAPACITY: u128 = 18_600_000_000;
 
 pub static INFO_LOCK_CODE_HASH: &str =
     include!(concat!(env!("OUT_DIR"), "/info_lock_code_hash.rs"));
