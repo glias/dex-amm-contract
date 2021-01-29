@@ -55,7 +55,7 @@ pub enum Error {
     AddLiquidityCkbOutLockHashMismatch,
     SUDTCellDataLenTooShort,
     CKBCellDataIsNotEmpty = 50,
-    LiquidityArgsUserLockHashMismatch
+    LiquidityArgsUserLockHashMismatch,
 }
 
 impl From<SysError> for Error {
