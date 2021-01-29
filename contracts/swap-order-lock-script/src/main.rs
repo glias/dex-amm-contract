@@ -47,10 +47,8 @@ fn program_entry() -> i8 {
 fn main() -> Result<(), Error> {
     let script_args: Vec<u8> = load_script()?.args().unpack();
 
-    let lock_args = SwapRequestLockArgs::from_raw(&script_args)?;
-
     for (idx, lock_hash) in QueryIter::new(load_cell_lock_hash, Source::Input).enumerate() {
-        if lock_hash == lock_args.user_lock_hash {
+        if lock_hash == script_args[0..32] {
             let witness = load_witness_args(idx, Source::Input)?;
             if witness.total_size() != 0 {
                 return Ok(());
@@ -69,7 +67,7 @@ fn main() -> Result<(), Error> {
 
     let order_cell = load_cell(index, Source::Input)?;
     let output_cell = load_cell(index, Source::Output)?;
-    let order_lock_args = SwapRequestLockArgs::from_raw(&load_cell_data(index, Source::Input)?)?;
+    let order_lock_args = SwapRequestLockArgs::from_raw(&script_args)?;
 
     if load_cell_lock_hash(index, Source::Output)? != order_lock_args.user_lock_hash {
         return Err(Error::InvalidOutputLockHash);
