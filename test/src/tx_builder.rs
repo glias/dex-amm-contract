@@ -8,7 +8,7 @@ use ckb_standalone_debugger::transaction::{
 // use ckb_system_scripts::BUNDLED_CELL;
 use ckb_testtool::{builtin::ALWAYS_SUCCESS, context::Context};
 use ckb_tool::ckb_crypto::secp::{Generator, Privkey, Pubkey};
-use ckb_tool::ckb_hash::{blake2b_256, new_blake2b};
+// use ckb_tool::ckb_hash::{blake2b_256, new_blake2b};
 use ckb_tool::ckb_script::{ScriptError, TransactionScriptError};
 use ckb_tool::ckb_types::core::{DepType, TransactionBuilder, TransactionView};
 use ckb_tool::ckb_types::packed::*;

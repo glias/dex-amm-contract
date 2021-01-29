@@ -267,8 +267,6 @@ test_contract!(
         )
         .custom_lock_args(Bytes::from(hash.clone()));
 
-        // pool_in.capcity = POOL_BASE_CAPCITY + info_in.ckb_reserve
-        // pool_in.amount = info_in.sudt_reserve
         let input_1 = Inputs::new_pool(SudtCell::new(POOL_BASE_CAPACITY, 0))
             .custom_lock_args(Bytes::from(hash.clone()));
         let input_2 = Inputs::new_matcher(FreeCell::new(100));
@@ -309,9 +307,6 @@ test_contract!(
         ]);
         let tx = context.complete_tx(tx);
 
-        // let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
-        // assert_error_eq!(err, tx_error(, 0));
-
         context
             .verify_tx(&tx, MAX_CYCLES)
             .expect("pass verification");
@@ -344,8 +339,6 @@ test_contract!(
         )
         .custom_lock_args(Bytes::from(hash.clone()));
 
-        // pool_in.capcity = POOL_BASE_CAPCITY + info_in.ckb_reserve
-        // pool_in.amount = info_in.sudt_reserve
         let input_1 = Inputs::new_pool(SudtCell::new(POOL_BASE_CAPACITY + 50, 50))
             .custom_lock_args(Bytes::from(hash.clone()));
         let input_2 = Inputs::new_matcher(FreeCell::new(100));
@@ -385,9 +378,6 @@ test_contract!(
         ]);
         let tx = context.complete_tx(tx);
 
-        // let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
-        // assert_error_eq!(err, tx_error(, 0));
-
         context
             .verify_tx(&tx, MAX_CYCLES)
             .expect("pass verification");
@@ -398,6 +388,7 @@ test_contract!(
     "info-typescript-sim"
 );
 
+// Todo: not pass
 test_contract!(
     mint_liquidity_change_sudt_success,
     {
@@ -470,58 +461,3 @@ test_contract!(
     false,
     "info-typescript-sim"
 );
-
-////////////////////////////////////////////////////////////////
-test_contract!(
-    testaaa,
-    {
-        let input_0 = Inputs::new_info(
-            InfoCell::new_unchecked(25000000000, Bytes::from(hex::decode("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000addc3b7a6e0f3cb4416f3f80fabfe8d6499e0efb6ef7cc51f2b8852dbd6387c").unwrap()))
-        )
-        .custom_lock_args(Bytes::from(hex::decode("bfb315567328439666a3a56a3f5cf7ea671142c24189404c306c5ffd5a3a11d0deabe540d91bbe1e83a43c81495a977bb4add1133d120cc236c9807061848542").unwrap()));
-        let input_1 = Inputs::new_pool(SudtCell::new(18600000000, 0))
-        .custom_type_args(Bytes::from(hex::decode("6fe3733cd9df22d05b8a70f7b505d0fb67fb58fb88693217135ff5079713e902").unwrap()))
-            .custom_lock_args(Bytes::from(hex::decode("bfb315567328439666a3a56a3f5cf7ea671142c24189404c306c5ffd5a3a11d0deabe540d91bbe1e83a43c81495a977bb4add1133d120cc236c9807061848542").unwrap()));
-        let input_2 = Inputs::new_matcher(FreeCell::new(500000000000));
-        let input_3 = Inputs::new_liquidity(RequestCell::new_unchecked(
-            24500000000,
-            Bytes::from(hex::decode("00ca9a3b000000000000000000000000").unwrap()),
-        ))
-            .custom_type_args(Bytes::from(hex::decode("6fe3733cd9df22d05b8a70f7b505d0fb67fb58fb88693217135ff5079713e902").unwrap()))
-            .custom_lock_args(Bytes::from(hex::decode("6fe3733cd9df22d05b8a70f7b505d0fb67fb58fb88693217135ff5079713e90200000000000000000000000000000000000000000000000000deabe540d91bbe1e83a43c81495a977bb4add1133d120cc236c9807061848542000000000000000000000000000000000000000000000000").unwrap()));
-
-        let output_0 = Outputs::new_info(InfoCell::new_unchecked(25000000000, Bytes::from(hex::decode("00fb661e02000000000000000000000000ca9a3b00000000000000000000000000ca9a3b0000000000000000000000000addc3b7a6e0f3cb4416f3f80fabfe8d6499e0efb6ef7cc51f2b8852dbd6387c").unwrap())))
-            .custom_lock_args(Bytes::from(hex::decode("bfb315567328439666a3a56a3f5cf7ea671142c24189404c306c5ffd5a3a11d0deabe540d91bbe1e83a43c81495a977bb4add1133d120cc236c9807061848542").unwrap()));
-        let output_1 = Outputs::new_pool(SudtCell::new_unchecked(27700000000, Bytes::from(hex::decode("00ca9a3b000000000000000000000000").unwrap())))
-            .custom_type_args(Bytes::from(hex::decode("6fe3733cd9df22d05b8a70f7b505d0fb67fb58fb88693217135ff5079713e902").unwrap()))
-            .custom_lock_args(Bytes::from(hex::decode("bfb315567328439666a3a56a3f5cf7ea671142c24189404c306c5ffd5a3a11d0deabe540d91bbe1e83a43c81495a977bb4add1133d120cc236c9807061848542").unwrap()));
-        let output_2 = Outputs::new_matcher(FreeCell::new(500000000000));
-        let output_3 = Outputs::new_sudt(SudtCell::new_unchecked(
-            15400000000,
-            Bytes::from(hex::decode("51facdb3000000000000000000000000").unwrap()),
-        ));
-
-        let (mut context, tx) = build_test_context(vec![input_0, input_1, input_2, input_3], vec![
-            output_0, output_1, output_2, output_3,
-        ]);
-        let tx = context.complete_tx(tx);
-
-        // let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
-        // assert_error_eq!(err, tx_error(, 0));
-
-        context
-            .verify_tx(&tx, MAX_CYCLES)
-            .expect("pass verification");
-
-        (context, tx)
-    },
-    false,
-    "info-typescript-sim"
-);
-
-#[test]
-fn mol() {
-    let a = share::cell::LiquidityRequestLockArgs::from_raw(&hex::decode("6fe3733cd9df22d05b8a70f7b505d0fb67fb58fb88693217135ff5079713e90201000000000000000000000000000000000000000000000000b4a0b2f9a2d211bc064f84a360db493c0303c0e4617ed3a49d446b243f2ca189000000000000000000000000000000000000000000000000").unwrap()).unwrap();
-
-    println!("{:?}", a.version);
-}
