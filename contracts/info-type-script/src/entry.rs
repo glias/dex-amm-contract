@@ -6,6 +6,7 @@ use core::result::Result;
 
 // Import CKB syscalls and structures
 // https://nervosnetwork.github.io/ckb-std/riscv64imac-unknown-none-elf/doc/ckb_std/index.html
+use share::cell::LiquidityRequestLockArgs;
 use share::cell::{InfoCellData, SUDTAmountData};
 use share::ckb_std::{
     ckb_constants::Source,
@@ -15,7 +16,9 @@ use share::ckb_std::{
     },
     default_alloc,
     // debug,
-    high_level::{load_cell, load_cell_data, load_cell_lock_hash, load_script, QueryIter},
+    high_level::{
+        load_cell, load_cell_data, load_cell_lock, load_cell_lock_hash, load_script, QueryIter,
+    },
 };
 use share::{blake2b, get_cell_type_hash};
 use type_id::verify_type_id;
@@ -71,10 +74,8 @@ pub fn main() -> Result<(), Error> {
         return Err(Error::SUDTReserveAmountDiff);
     }
 
-    let req_type_hash = get_cell_type_hash!(3, Source::Input);
-    if req_type_hash == info_in_data.liquidity_sudt_type_hash
-        || req_type_hash == get_cell_type_hash!(1, Source::Input)
-    {
+    let req_lock_args: Vec<u8> = load_cell_lock(3, Source::Input)?.args().unpack();
+    if LiquidityRequestLockArgs::from_raw(&req_lock_args).is_ok() {
         verify::liquidity_tx_verification()?;
     } else {
         verify::swap_tx_verification()?;
