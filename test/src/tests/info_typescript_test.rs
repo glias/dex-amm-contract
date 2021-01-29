@@ -282,6 +282,9 @@ test_contract!(
             .tips(0)
             .tips_sudt(0)
             .build();
+
+        println!("{:?}", hex::encode(liquidity_in_lock_args.as_bytes()));
+
         let input_3 = Inputs::new_liquidity(RequestCell::new(SUDT_CAPACITY + 50, 50))
             .custom_lock_args(liquidity_in_lock_args.as_bytes())
             .custom_type_args(liquidity_sudt_type_args());
@@ -395,6 +398,79 @@ test_contract!(
     "info-typescript-sim"
 );
 
+test_contract!(
+    mint_liquidity_change_sudt_success,
+    {
+        let mut hash = blake2b!("ckb", *SUDT_TYPE_HASH).to_vec();
+        let mut hash_1 = info_cell_type_hash(0).to_vec();
+        hash.append(&mut hash_1);
+        assert_eq!(hash.len(), 64);
+
+        let input_0 = Inputs::new_info(
+            InfoCellBuilder::default()
+                .capacity(1000)
+                .total_liquidity(100)
+                .sudt_reserve(50)
+                .ckb_reserve(50)
+                .liquidity_sudt_type_hash(*LIQUIDITY_SUDT_TYPE_HASH)
+                .build(),
+        )
+        .custom_lock_args(Bytes::from(hash.clone()));
+
+        // pool_in.capcity = POOL_BASE_CAPCITY + info_in.ckb_reserve
+        // pool_in.amount = info_in.sudt_reserve
+        let input_1 = Inputs::new_pool(SudtCell::new(POOL_BASE_CAPACITY + 50, 50))
+            .custom_lock_args(Bytes::from(hash.clone()));
+        let input_2 = Inputs::new_matcher(FreeCell::new(100));
+
+        let liquidity_in_lock_args = LiquidityRequestLockArgsBuilder::default()
+            .user_lock_hash(user_lock_hash(9999))
+            .version(1)
+            .sudt_min(80)
+            .ckb_min(30)
+            .info_type_hash(info_cell_type_hash(0))
+            .tips(0)
+            .tips_sudt(0)
+            .build();
+        let input_3 = Inputs::new_liquidity(RequestCell::new(SUDT_CAPACITY * 2 + 100, 302))
+            .custom_lock_args(liquidity_in_lock_args.as_bytes());
+
+        let output_0 = Outputs::new_info(
+            InfoCellBuilder::default()
+                .capacity(INFO_CAPACITY)
+                .ckb_reserve(150)
+                .sudt_reserve(151)
+                .liquidity_sudt_type_hash(*SUDT_TYPE_HASH)
+                .build(),
+        )
+        .custom_lock_args(Bytes::from(hash.clone()));
+        let output_1 = Outputs::new_pool(SudtCell::new(POOL_BASE_CAPACITY + 101, 100))
+            .custom_lock_args(Bytes::from(hash));
+        let output_2 = Outputs::new_matcher(FreeCell::new(150));
+        let output_3 = Outputs::new_sudt(SudtCell::new(100, 201))
+            .custom_type_args(liquidity_sudt_type_args())
+            .custom_lock_args(Bytes::from(9999usize.to_le_bytes().to_vec()));
+        let output_4 = Outputs::new_sudt(SudtCell::new(50, 201))
+            .custom_lock_args(Bytes::from(9999usize.to_le_bytes().to_vec()));
+
+        let (mut context, tx) = build_test_context(vec![input_0, input_1, input_2, input_3], vec![
+            output_0, output_1, output_2, output_3, output_4,
+        ]);
+        let tx = context.complete_tx(tx);
+
+        // let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
+        // assert_error_eq!(err, tx_error(, 0));
+
+        context
+            .verify_tx(&tx, MAX_CYCLES)
+            .expect("pass verification");
+
+        (context, tx)
+    },
+    false,
+    "info-typescript-sim"
+);
+
 ////////////////////////////////////////////////////////////////
 test_contract!(
     testaaa,
@@ -445,13 +521,7 @@ test_contract!(
 
 #[test]
 fn mol() {
-    let a = InfoCellBuilder::default()
-        .capacity(1000)
-        .ckb_reserve(500)
-        .sudt_reserve(700)
-        .liquidity_sudt_type_hash(*SUDT_TYPE_HASH)
-        .build()
-        .data;
+    let a = share::cell::LiquidityRequestLockArgs::from_raw(&hex::decode("6fe3733cd9df22d05b8a70f7b505d0fb67fb58fb88693217135ff5079713e90201000000000000000000000000000000000000000000000000b4a0b2f9a2d211bc064f84a360db493c0303c0e4617ed3a49d446b243f2ca189000000000000000000000000000000000000000000000000").unwrap()).unwrap();
 
-    println!("{:?}", a.pack());
+    println!("{:?}", a.version);
 }
