@@ -76,7 +76,7 @@ fn main() -> Result<(), Error> {
     // if order_lock_args.kind == OrderKind::SellCKB {
     if load_cell_type(index, Source::Input)?.is_none() {
         // Ckb -> SUDT
-        if order_lock_args.sudt_type_hash == get_cell_type_hash!(index, Source::Output) {
+        if order_lock_args.sudt_type_hash != get_cell_type_hash!(index, Source::Output) {
             return Err(Error::InvalidOutputTypeHash);
         }
 
