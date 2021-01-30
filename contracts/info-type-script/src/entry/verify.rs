@@ -177,8 +177,7 @@ pub fn swap_tx_verification() -> Result<(), Error> {
         let ckb_paid = info_in_data.ckb_reserve - info_out_data.ckb_reserve;
         let tmp_sudt_got = sudt_got.to_biguint().unwrap();
         let numerator = tmp_sudt_got.clone() * FEE_RATE * ckb_reserve;
-        let denominator =
-            BigUint::from(ckb_paid) * (sudt_reserve * THOUSAND + FEE_RATE * tmp_sudt_got);
+        let denominator = sudt_reserve * THOUSAND + FEE_RATE * tmp_sudt_got;
 
         if BigUint::from(ckb_paid) != numerator / denominator + ONE {
             return Err(Error::SellSUDTFailed);
