@@ -12,7 +12,7 @@ pub enum Error {
     MissingTypeScript = 5,
     MoreThanOneLiquidityPool,
     MintInitialLiquidityFailed,
-    InfoCreationError,
+    LiquidityArgsUserLockHashMismatch,
     InvalidTypeID,
     VersionDiff = 10,
     SUDTTypeHashMismatch,
@@ -55,7 +55,6 @@ pub enum Error {
     AddLiquidityCkbOutLockHashMismatch,
     SUDTCellDataLenTooShort,
     CKBCellDataIsNotEmpty = 50,
-    LiquidityArgsUserLockHashMismatch,
 }
 
 impl From<SysError> for Error {

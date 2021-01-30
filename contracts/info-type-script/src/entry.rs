@@ -84,9 +84,9 @@ pub fn main() -> Result<(), Error> {
     Ok(())
 }
 
-#[allow(clippy::string_lit_as_bytes)]
 pub fn verify_info_creation(info_out_cell: &CellOutput) -> Result<(), Error> {
-    verify_type_id()?;
+    // Todo: ignore verify type id temporary
+    let _ = verify_type_id();
 
     let info_out_lock_args: Vec<u8> = info_out_cell.lock().args().unpack();
     let pool_type_hash = get_cell_type_hash!(1, Source::Output);
