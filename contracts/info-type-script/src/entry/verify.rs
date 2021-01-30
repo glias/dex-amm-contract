@@ -169,7 +169,7 @@ pub fn swap_tx_verification() -> Result<(), Error> {
         let numerator = tmp_ckb_got.clone() * FEE_RATE * sudt_reserve;
         let denominator = ckb_reserve * THOUSAND + tmp_ckb_got * FEE_RATE;
 
-        if BigUint::from(sudt_paid) != numerator / denominator {
+        if BigUint::from(sudt_paid) != numerator / denominator + ONE {
             return Err(Error::BuySUDTFailed);
         }
     } else if ckb_got < zero && sudt_got > zero {
@@ -180,7 +180,7 @@ pub fn swap_tx_verification() -> Result<(), Error> {
         let denominator =
             BigUint::from(ckb_paid) * (sudt_reserve * THOUSAND + FEE_RATE * tmp_sudt_got);
 
-        if BigUint::from(ckb_paid) != numerator / denominator {
+        if BigUint::from(ckb_paid) != numerator / denominator + ONE {
             return Err(Error::SellSUDTFailed);
         }
     } else {
