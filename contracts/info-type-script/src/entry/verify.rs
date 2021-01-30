@@ -122,7 +122,7 @@ pub fn liquidity_tx_verification() -> Result<(), Error> {
     }
 
     if BigUint::from(info_out_data.total_liquidity)
-        >= (BigUint::from(info_in_data.total_liquidity) - user_liquidity_burned
+        != (BigUint::from(info_in_data.total_liquidity) - user_liquidity_burned
             + user_liquidity_mint)
     {
         return Err(Error::InvalidTotalLiquidity);
