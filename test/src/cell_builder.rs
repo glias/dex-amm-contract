@@ -19,25 +19,60 @@ impl InfoCell {
 }
 
 #[derive(Default)]
-pub struct RequestCell {
+pub struct LiquidityRequestCell {
     pub capacity: Capacity,
     pub data:     Bytes,
 }
 
-impl RequestCell {
+impl LiquidityRequestCell {
     pub fn new(capacity: u64, amount: u128) -> Self {
         let sudt_data: Uint128 = amount.pack();
 
-        RequestCell {
+        LiquidityRequestCell {
             capacity: Capacity::shannons(capacity),
             data:     sudt_data.as_bytes(),
         }
     }
 
     pub fn new_unchecked(capacity: u64, data: Bytes) -> Self {
-        RequestCell {
+        LiquidityRequestCell {
             capacity: Capacity::shannons(capacity),
             data,
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct SwapRequestCell {
+    pub capacity: Capacity,
+    pub data:     Bytes,
+    pub is_sudt:  bool,
+}
+
+impl SwapRequestCell {
+    pub fn new_ckb(capacity: u64) -> Self {
+        SwapRequestCell {
+            capacity: Capacity::shannons(capacity),
+            data:     Bytes::default(),
+            is_sudt:  false,
+        }
+    }
+
+    pub fn new_sudt(capacity: u64, amount: u128) -> Self {
+        let sudt_data: Uint128 = amount.pack();
+
+        SwapRequestCell {
+            capacity: Capacity::shannons(capacity),
+            data:     sudt_data.as_bytes(),
+            is_sudt:  true,
+        }
+    }
+
+    pub fn new_unchecked(capacity: u64, data: Bytes, is_sudt: bool) -> Self {
+        SwapRequestCell {
+            capacity: Capacity::shannons(capacity),
+            data,
+            is_sudt,
         }
     }
 }

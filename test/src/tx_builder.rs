@@ -7,25 +7,25 @@ use ckb_standalone_debugger::transaction::{
 };
 // use ckb_system_scripts::BUNDLED_CELL;
 use ckb_testtool::{builtin::ALWAYS_SUCCESS, context::Context};
-use ckb_tool::ckb_crypto::secp::{Generator, Privkey, Pubkey};
+use ckb_tool::ckb_crypto::secp::Pubkey;
 // use ckb_tool::ckb_hash::{blake2b_256, new_blake2b};
 use ckb_tool::ckb_script::{ScriptError, TransactionScriptError};
 use ckb_tool::ckb_types::core::{DepType, TransactionBuilder, TransactionView};
 use ckb_tool::ckb_types::packed::*;
-use ckb_tool::ckb_types::{bytes::Bytes, prelude::*, H256};
+use ckb_tool::ckb_types::{bytes::Bytes, prelude::*};
 use ckb_x64_simulator::RunningSetup;
 use molecule::prelude::*;
 use serde_json::to_string_pretty;
 
-use crate::cell_builder::{FreeCell, InfoCell, RequestCell, SudtCell};
+use crate::cell_builder::{FreeCell, InfoCell, LiquidityRequestCell, SudtCell, SwapRequestCell};
 use crate::{Loader, TX_FOLDER};
 
 pub enum InputCell {
     Sudt(SudtCell),
     Info(InfoCell),
     Matcher(FreeCell),
-    Liquidity(RequestCell),
-    Swap(RequestCell),
+    Liquidity(LiquidityRequestCell),
+    Swap(SwapRequestCell),
     Pool(SudtCell),
 }
 
@@ -62,7 +62,7 @@ impl Inputs {
         Self::inner_new(InputCell::Pool(cell))
     }
 
-    pub fn new_liquidity(cell: RequestCell) -> Self {
+    pub fn new_liquidity(cell: LiquidityRequestCell) -> Self {
         Self::inner_new(InputCell::Liquidity(cell))
     }
 
@@ -166,7 +166,7 @@ fn build_tx(
         .out_point(liquidity_lock_out_point.clone())
         .build();
 
-    let swap_lock_bin: Bytes = Loader::default().load_binary("swap-order-lock-script");
+    let swap_lock_bin: Bytes = Loader::default().load_binary("swap-lock-script");
     let swap_lock_out_point = context.deploy_cell(swap_lock_bin);
     let swap_lock_dep = CellDep::new_builder()
         .out_point(swap_lock_out_point.clone())
@@ -341,11 +341,17 @@ fn build_tx(
                     .build_script(&swap_lock_out_point, lock_args)
                     .expect("swap lock script");
 
+                let type_script = if cell.is_sudt {
+                    Some(sudt_type_script)
+                } else {
+                    None
+                };
+
                 let input_out_point = context.create_cell(
                     CellOutput::new_builder()
                         .capacity(cell.capacity.pack())
                         .lock(swap_lock)
-                        .type_(Some(sudt_type_script).pack())
+                        .type_(type_script.pack())
                         .build(),
                     cell.data,
                 );

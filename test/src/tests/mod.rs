@@ -19,7 +19,7 @@ use crate::{cell_builder::*, tx_builder::*};
 use crate::{test_contract, Loader};
 
 const MAX_CYCLES: u64 = 10000_0000;
-const POOL_BASE_CAPACITY: u64 = 18_600_000_000;
+const POOL_CAPACITY: u64 = 18_600_000_000;
 const SUDT_CAPACITY: u64 = 15_400_000_000;
 const INFO_CAPACITY: u64 = 25_000_000_000;
 
@@ -97,4 +97,8 @@ fn info_type_args(idx: usize) -> Bytes {
 
 fn liquidity_sudt_type_args() -> Bytes {
     Bytes::from(9999usize.to_le_bytes().to_vec())
+}
+
+fn user_lock_args(idx: usize) -> Bytes {
+    Bytes::from(idx.to_le_bytes().to_vec())
 }
