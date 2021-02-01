@@ -14,9 +14,9 @@ enable_type_id = false
 location = { file = "build/release/liquidity-lock-script"}
 
 [[cells]]
-name = "swap-order-lock-script"
+name = "swap-lock-script"
 enable_type_id = false
-location = { file = "build/release/swap-order-lock-script"}
+location = { file = "build/release/swap-lock-script"}
 
 # Replace with your own lock if you want to unlock deployed cells.
 # For example the secp256k1 lock

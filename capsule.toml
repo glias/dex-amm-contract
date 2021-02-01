@@ -9,7 +9,7 @@ version = "0.4.4"
 deployment = "deployment.toml"
 
 [[contracts]]
-name = "swap-order-lock-script"
+name = "swap-lock-script"
 template_type = "Rust"
 
 [[contracts]]
