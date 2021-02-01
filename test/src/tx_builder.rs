@@ -66,6 +66,10 @@ impl Inputs {
         Self::inner_new(InputCell::Liquidity(cell))
     }
 
+    pub fn new_swap(cell: SwapRequestCell) -> Self {
+        Self::inner_new(InputCell::Swap(cell))
+    }
+
     fn inner_new(cell: InputCell) -> Self {
         Inputs {
             cell,

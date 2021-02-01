@@ -27,6 +27,7 @@ lazy_static::lazy_static! {
 
 const TEST_ENV_VAR: &str = "CAPSULE_TEST_ENV";
 
+#[derive(Debug)]
 pub enum TestEnv {
     Debug,
     Release,
@@ -52,6 +53,7 @@ impl Default for Loader {
             Ok(val) => val.parse().expect("test env"),
             Err(_) => TestEnv::Debug,
         };
+        println!("{:?}", test_env);
         Self::with_test_env(test_env)
     }
 }
