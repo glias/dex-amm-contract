@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "contracts/swap-order-lock-script",
+    "contracts/swap-lock-script",
     "contracts/liquidity-lock-script",
     "contracts/info-lock-script",
     "contracts/info-type-script",
