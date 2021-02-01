@@ -11,7 +11,7 @@ use share::cell::{InfoCellData, LiquidityRequestLockArgs, SUDTAmountData};
 use share::ckb_std::{
     ckb_constants::Source,
     ckb_types::{packed::CellOutput, prelude::*},
-    // debug,
+    debug,
     high_level::{load_cell, load_cell_data, load_cell_lock_hash, QueryIter},
 };
 use share::{decode_u128, get_cell_type_hash};
@@ -322,6 +322,8 @@ fn mint_liquidity(
         sudt_injected = liquidity_order_data - decode_u128(&change_data[0..16])?;
         ckb_injected = (liquidity_order_cell.capacity().unpack() - SUDT_CAPACITY * 2) as u128;
 
+        debug!("{:?}\n{:?}", sudt_injected, ckb_injected);
+
         if BigUint::from(sudt_injected)
             != (BigUint::from(ckb_injected) * sudt_reserve / ckb_reserve) + ONE
         {
@@ -332,6 +334,8 @@ fn mint_liquidity(
         if min_sudt_injected == 0 || sudt_injected < min_sudt_injected {
             return Err(Error::InvalidMinSUDTInject);
         }
+
+        debug!("{:?}", user_liquidity);
 
         if BigUint::from(user_liquidity)
             != (BigUint::from(ckb_injected) * total_liquidity / ckb_reserve) + ONE
