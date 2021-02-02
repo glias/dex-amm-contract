@@ -11,11 +11,11 @@ const SUDT_AMOUNT_DATA_LEN: usize = 16;
 
 #[derive(Debug)]
 pub struct LiquidityRequestLockArgs {
-    pub user_lock_hash: [u8; 32],
+    pub info_type_hash: [u8; 32],
     pub version:        u8,
     pub amount_0:       u64,
     pub amount_1:       u128,
-    pub info_type_hash: [u8; 32],
+    pub user_lock_hash: [u8; 32],
     pub tips:           u64,
     pub tips_sudt:      u128,
 }
@@ -24,22 +24,22 @@ impl LiquidityRequestLockArgs {
     pub fn from_raw(cell_raw_data: &[u8]) -> Result<Self, Error> {
         check_args_len(cell_raw_data.len(), LIQUIDITY_ORDER_ARGS_LEN)?;
 
-        let mut user_lock_hash = [0u8; 32];
-        user_lock_hash.copy_from_slice(&cell_raw_data[0..32]);
+        let mut info_type_hash = [0u8; 32];
+        info_type_hash.copy_from_slice(&cell_raw_data[0..32]);
         let version = decode_u8(&cell_raw_data[32..33])?;
         let amount_0 = decode_u64(&cell_raw_data[49..57])?;
         let amount_1 = decode_u128(&cell_raw_data[33..49])?;
-        let mut info_type_hash = [0u8; 32];
-        info_type_hash.copy_from_slice(&cell_raw_data[57..89]);
+        let mut user_lock_hash = [0u8; 32];
+        user_lock_hash.copy_from_slice(&cell_raw_data[57..89]);
         let tips = decode_u64(&cell_raw_data[89..97])?;
         let tips_sudt = decode_u128(&cell_raw_data[97..113])?;
 
         Ok(LiquidityRequestLockArgs {
-            user_lock_hash,
+            info_type_hash,
             version,
             amount_0,
             amount_1,
-            info_type_hash,
+            user_lock_hash,
             tips,
             tips_sudt,
         })
@@ -48,10 +48,10 @@ impl LiquidityRequestLockArgs {
 
 #[derive(Debug)]
 pub struct SwapRequestLockArgs {
-    pub user_lock_hash: [u8; 32],
+    pub sudt_type_hash: [u8; 32],
     pub version:        u8,
     pub min_amount_out: u128,
-    pub sudt_type_hash: [u8; 32],
+    pub user_lock_hash: [u8; 32],
     pub tips:           u64,
     pub tips_sudt:      u128,
 }
@@ -60,20 +60,20 @@ impl SwapRequestLockArgs {
     pub fn from_raw(cell_raw_data: &[u8]) -> Result<Self, Error> {
         check_args_len(cell_raw_data.len(), SWAP_ORDER_ARGS_LEN)?;
 
-        let mut user_lock_hash = [0u8; 32];
-        user_lock_hash.copy_from_slice(&cell_raw_data[0..32]);
+        let mut sudt_type_hash = [0u8; 32];
+        sudt_type_hash.copy_from_slice(&cell_raw_data[0..32]);
         let version = decode_u8(&cell_raw_data[32..33])?;
         let min_amount_out = decode_u128(&cell_raw_data[33..49])?;
-        let mut sudt_type_hash = [0u8; 32];
-        sudt_type_hash.copy_from_slice(&cell_raw_data[49..81]);
+        let mut user_lock_hash = [0u8; 32];
+        user_lock_hash.copy_from_slice(&cell_raw_data[49..81]);
         let tips = decode_u64(&cell_raw_data[81..89])?;
         let tips_sudt = decode_u128(&cell_raw_data[89..105])?;
 
         Ok(SwapRequestLockArgs {
-            user_lock_hash,
+            sudt_type_hash,
             version,
             min_amount_out,
-            sudt_type_hash,
+            user_lock_hash,
             tips,
             tips_sudt,
         })

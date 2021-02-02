@@ -11,7 +11,6 @@ use share::cell::{InfoCellData, LiquidityRequestLockArgs, SUDTAmountData};
 use share::ckb_std::{
     ckb_constants::Source,
     ckb_types::{packed::CellOutput, prelude::*},
-    debug,
     high_level::{load_cell, load_cell_data, load_cell_lock_hash, QueryIter},
 };
 use share::{decode_u128, get_cell_type_hash};

@@ -41,14 +41,16 @@ fn program_entry() -> i8 {
 fn main() -> Result<(), Error> {
     let self_args: Vec<u8> = load_script()?.args().unpack();
 
+    // Cancel request
     for (idx, lock_hash) in QueryIter::new(load_cell_lock_hash, Source::Input).enumerate() {
-        if lock_hash == self_args[0..32] && load_witness_args(idx, Source::Input)?.total_size() != 0
+        if lock_hash == self_args[57..89]
+            && load_witness_args(idx, Source::Input)?.total_size() != 0
         {
             return Ok(());
         }
     }
 
-    if get_cell_type_hash!(0, Source::Input) == self_args[57..89] {
+    if get_cell_type_hash!(0, Source::Input) == self_args[0..32] {
         return Ok(());
     }
 

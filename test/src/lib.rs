@@ -53,7 +53,6 @@ impl Default for Loader {
             Ok(val) => val.parse().expect("test env"),
             Err(_) => TestEnv::Debug,
         };
-        println!("{:?}", test_env);
         Self::with_test_env(test_env)
     }
 }
