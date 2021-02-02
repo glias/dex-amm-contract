@@ -23,8 +23,7 @@ use share::ckb_std::{
     high_level::{load_cell, load_script, QueryIter},
 };
 
-use share::blake2b;
-use share::get_cell_type_hash;
+use share::{blake2b, get_cell_type_hash};
 
 use error::Error;
 

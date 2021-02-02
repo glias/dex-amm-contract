@@ -488,8 +488,6 @@ test_contract!(
         )
         .custom_lock_args(Bytes::from(hash.clone()));
 
-        // pool_in.capcity = POOL_BASE_CAPCITY + info_in.ckb_reserve
-        // pool_in.amount = info_in.sudt_reserve
         let input_1 = Inputs::new_pool(SudtCell::new(POOL_CAPACITY + 100, 100))
             .custom_lock_args(Bytes::from(hash.clone()));
         let input_2 = Inputs::new_matcher(FreeCell::new(100));
