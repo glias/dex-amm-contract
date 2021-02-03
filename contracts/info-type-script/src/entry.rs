@@ -32,6 +32,8 @@ const FEE_RATE: u128 = 997;
 const POOL_CAPACITY: u128 = 18_600_000_000;
 const SUDT_CAPACITY: u64 = 15_400_000_000;
 const INFO_CAPACITY: u64 = 25_000_000_000;
+const INFO_VERSION: u8 = 1;
+const LIQUIDITY_CELL_BASE_INDEX: usize = 3;
 
 pub static INFO_LOCK_CODE_HASH: &str =
     include!(concat!(env!("OUT_DIR"), "/info_lock_code_hash.rs"));

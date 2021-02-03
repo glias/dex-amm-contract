@@ -15,12 +15,8 @@ use share::ckb_std::{
 };
 use share::{decode_u128, get_cell_type_hash};
 
-use crate::entry::{INFO_CAPACITY, ONE, SUDT_CAPACITY};
+use crate::entry::{INFO_CAPACITY, INFO_VERSION, LIQUIDITY_CELL_BASE_INDEX, ONE, SUDT_CAPACITY};
 use crate::error::Error;
-
-const INFO_VERSION: u8 = 1;
-
-const LIQUIDITY_CELL_BASE_INDEX: usize = 3;
 
 pub fn liquidity_tx_verification() -> Result<(), Error> {
     let info_in_data = InfoCellData::from_raw(&load_cell_data(0, Source::Input)?)?;

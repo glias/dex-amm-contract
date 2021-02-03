@@ -55,6 +55,13 @@ pub enum Error {
     AddLiquidityCkbOutLockHashMismatch,
     SUDTCellDataLenTooShort,
     CKBCellDataIsNotEmpty = 50,
+    InvalidOutputLockHash,
+    RequestCapcityEqSUDTCapcity,
+    InvalidOutputTypeHash,
+    InvalidSwapOutputCapacity,
+    SwapAmountLessThanMin = 55,
+    InvalidSwapOutputData,
+    SwapInputSUDTAmountEqZero,
 }
 
 impl From<SysError> for Error {
