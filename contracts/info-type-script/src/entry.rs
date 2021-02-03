@@ -17,12 +17,10 @@ use share::ckb_std::{
     default_alloc,
     // debug,
     high_level::{
-        load_cell, load_cell_data, load_cell_lock_hash, load_script,
-        load_witness_args, QueryIter,
+        load_cell, load_cell_data, load_cell_lock_hash, load_script, load_witness_args, QueryIter,
     },
 };
 use share::{blake2b, decode_u64, get_cell_type_hash};
-use type_id::verify_type_id;
 
 use crate::error::Error;
 
@@ -57,6 +55,15 @@ pub fn main() -> Result<(), Error> {
     let info_in_data = InfoCellData::from_raw(&load_cell_data(0, Source::Input)?)?;
     let pool_in_cell = load_cell(1, Source::Input)?;
     let pool_in_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Input)?)?;
+    let info_out_cell = load_cell(0, Source::Output)?;
+    let info_out_data = InfoCellData::from_raw(&load_cell_data(0, Source::Output)?)?;
+    let pool_out_cell = load_cell(1, Source::Output)?;
+    let pool_out_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Output)?)?;
+
+    let mut ckb_reserve = info_in_data.ckb_reserve;
+    let mut sudt_reserve = info_in_data.sudt_reserve;
+    let mut total_liquidity = info_in_data.total_liquidity;
+    let liquidity_sudt_type_hash = info_in_data.liquidity_sudt_type_hash;
 
     basic_verify(&info_in_data, &pool_in_cell, &pool_in_data)?;
 
@@ -68,8 +75,93 @@ pub fn main() -> Result<(), Error> {
     let swap_cell_count = decode_u64(&raw_witness)? as usize;
     let cell_count = QueryIter::new(load_cell, Source::Input).count();
 
-    liquidity_verify::liquidity_tx_verification(swap_cell_count + 3, cell_count)?;
-    swap_verify::swap_tx_verification(3, swap_cell_count + 3)?;
+    if cell_count == 4 && swap_cell_count == 0 {
+        initial_mint_liquidity(
+            &info_out_cell,
+            &info_out_data,
+            &pool_in_cell,
+            &pool_in_data,
+            &pool_out_cell,
+            &pool_out_data,
+            &mut ckb_reserve,
+            &mut sudt_reserve,
+            &mut total_liquidity,
+            liquidity_sudt_type_hash,
+        )?;
+    }
+
+    liquidity_verify::liquidity_tx_verification(
+        &info_out_cell,
+        &info_out_data,
+        &pool_in_cell,
+        &pool_in_data,
+        &pool_out_cell,
+        &pool_out_data,
+        swap_cell_count,
+        &mut ckb_reserve,
+        &mut sudt_reserve,
+        &mut total_liquidity,
+        liquidity_sudt_type_hash,
+    )?;
+    swap_verify::swap_tx_verification(
+        &info_out_cell,
+        &info_out_data,
+        &pool_in_cell,
+        &pool_in_data,
+        &pool_out_cell,
+        &pool_out_data,
+        swap_cell_count,
+        &mut ckb_reserve,
+        &mut sudt_reserve,
+        &mut total_liquidity,
+    )?;
+
+    Ok(())
+}
+
+fn initial_mint_liquidity(
+    info_out_cell: &CellOutput,
+    info_out_data: &InfoCellData,
+    pool_in_cell: &CellOutput,
+    pool_in_data: &SUDTAmountData,
+    pool_out_cell: &CellOutput,
+    pool_out_data: &SUDTAmountData,
+    ckb_reserve: &mut u128,
+    sudt_reserve: &mut u128,
+    total_liquidity: &mut u128,
+    liquidity_sudt_type_hash: [u8; 32],
+) -> Result<(), Error> {
+    if *total_liquidity == 0 {
+        liquidity_verify::verify_initial_mint(
+            liquidity_sudt_type_hash,
+            &mut ckb_reserve,
+            &mut sudt_reserve,
+            &mut total_liquidity,
+        )?;
+    } else {
+        return Err(Error::InvalidInitialLiquidityTx);
+    }
+
+    if info_out_cell.capacity().unpack() != INFO_CAPACITY
+        || info_out_data.ckb_reserve != *ckb_reserve
+    {
+        return Err(Error::InvalidCKBReserve);
+    }
+
+    if info_out_data.sudt_reserve != *sudt_reserve {
+        return Err(Error::InvalidSUDTReserve);
+    }
+
+    if info_out_data.total_liquidity != *total_liquidity {
+        return Err(Error::InvalidTotalLiquidity);
+    }
+
+    if (pool_out_cell.capacity().unpack() as u128)
+        != (pool_in_cell.capacity().unpack() as u128 + info_out_data.ckb_reserve - (*ckb_reserve))
+        || pool_out_data.sudt_amount != info_out_data.sudt_reserve
+    {
+        return Err(Error::InvalidCKBAmount);
+    }
 
     Ok(())
 }
@@ -113,7 +205,7 @@ fn basic_verify(
 
 fn verify_info_creation(info_out_cell: &CellOutput) -> Result<(), Error> {
     // Todo: ignore verify type id temporary
-    let _ = verify_type_id();
+    let _ = type_id::verify_type_id();
 
     let info_out_lock_args: Vec<u8> = info_out_cell.lock().args().unpack();
     let pool_type_hash = get_cell_type_hash!(1, Source::Output);

@@ -18,18 +18,20 @@ use share::{decode_u128, get_cell_type_hash};
 use crate::entry::{INFO_CAPACITY, INFO_VERSION, LIQUIDITY_CELL_BASE_INDEX, ONE, SUDT_CAPACITY};
 use crate::error::Error;
 
-pub fn liquidity_tx_verification(begin: usize, end: usize) -> Result<(), Error> {
-    let info_in_data = InfoCellData::from_raw(&load_cell_data(0, Source::Input)?)?;
-    let pool_in_cell = load_cell(1, Source::Input)?;
-    let info_out_cell = load_cell(0, Source::Output)?;
-    let info_out_data = InfoCellData::from_raw(&load_cell_data(0, Source::Output)?)?;
-    let pool_out_cell = load_cell(1, Source::Output)?;
-    let pool_out_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Output)?)?;
+pub fn liquidity_tx_verification(
+    info_out_cell: &CellOutput,
+    info_out_data: &InfoCellData,
+    pool_in_cell: &CellOutput,
+    pool_in_data: &SUDTAmountData,
+    pool_out_cell: &CellOutput,
+    pool_out_data: &SUDTAmountData,
+    swap_cell_count: usize,
+    ckb_reserve: &mut u128,
+    sudt_reserve: &mut u128,
+    total_liquidity: &mut u128,
+    liquidity_sudt_type_hash: [u8; 32],
+) -> Result<(), Error> {
     let pool_type_hash = get_cell_type_hash!(1, Source::Input);
-
-    let mut ckb_reserve = info_in_data.ckb_reserve;
-    let mut sudt_reserve = info_in_data.sudt_reserve;
-    let mut total_liquidity = info_in_data.total_liquidity;
 
     for (idx, (liquidity_order_cell, raw_data)) in QueryIter::new(load_cell, Source::Input)
         .zip(QueryIter::new(load_cell_data, Source::Input))
@@ -48,21 +50,7 @@ pub fn liquidity_tx_verification(begin: usize, end: usize) -> Result<(), Error> 
             return Err(Error::LiquidityArgsInfoTypeHashMismatch);
         }
 
-        if info_in_data.total_liquidity == 0 {
-            if QueryIter::new(load_cell, Source::Input).count() == 4 {
-                verify_initial_mint(
-                    info_in_data.liquidity_sudt_type_hash,
-                    &mut ckb_reserve,
-                    &mut sudt_reserve,
-                    &mut total_liquidity,
-                )?;
-                break;
-            } else {
-                return Err(Error::InvalidInitialLiquidityTx);
-            }
-        }
-
-        if liquidity_type_hash == info_in_data.liquidity_sudt_type_hash {
+        if liquidity_type_hash == liquidity_sudt_type_hash {
             burn_liquidity(
                 idx,
                 &liquidity_order_cell,
@@ -74,7 +62,7 @@ pub fn liquidity_tx_verification(begin: usize, end: usize) -> Result<(), Error> 
         } else if liquidity_type_hash == pool_type_hash {
             mint_liquidity(
                 idx,
-                &info_in_data,
+                liquidity_sudt_type_hash,
                 &liquidity_order_cell,
                 liquidity_order_data.sudt_amount,
                 &mut ckb_reserve,
@@ -87,22 +75,21 @@ pub fn liquidity_tx_verification(begin: usize, end: usize) -> Result<(), Error> 
     }
 
     if info_out_cell.capacity().unpack() != INFO_CAPACITY
-        || info_out_data.ckb_reserve != ckb_reserve
+        || info_out_data.ckb_reserve != *ckb_reserve
     {
         return Err(Error::InvalidCKBReserve);
     }
 
-    if info_out_data.sudt_reserve != sudt_reserve {
+    if info_out_data.sudt_reserve != *sudt_reserve {
         return Err(Error::InvalidSUDTReserve);
     }
 
-    if info_out_data.total_liquidity != total_liquidity {
+    if info_out_data.total_liquidity != *total_liquidity {
         return Err(Error::InvalidTotalLiquidity);
     }
 
     if (pool_out_cell.capacity().unpack() as u128)
-        != (pool_in_cell.capacity().unpack() as u128 + info_out_data.ckb_reserve
-            - info_in_data.ckb_reserve)
+        != (pool_in_cell.capacity().unpack() as u128 + info_out_data.ckb_reserve - *ckb_reserve)
         || pool_out_data.sudt_amount != info_out_data.sudt_reserve
     {
         return Err(Error::InvalidCKBAmount);
@@ -111,13 +98,13 @@ pub fn liquidity_tx_verification(begin: usize, end: usize) -> Result<(), Error> 
     Ok(())
 }
 
-fn verify_initial_mint(
+pub fn verify_initial_mint(
     liquidity_sudt_type_hash: [u8; 32],
     ckb_reserve: &mut u128,
     sudt_reserve: &mut u128,
     total_liquidity: &mut u128,
 ) -> Result<(), Error> {
-    if *ckb_reserve != 0 || *sudt_reserve != 0 || *total_liquidity != 0 {
+    if *ckb_reserve != 0 || *sudt_reserve != 0 {
         return Err(Error::InvalidInfoInData);
     }
 
@@ -153,7 +140,7 @@ fn verify_initial_mint(
 
 fn mint_liquidity(
     liquidity_cell_index: usize,
-    info_in_data: &InfoCellData,
+    liquidity_sudt_type_hash: [u8; 32],
     liquidity_order_cell: &CellOutput,
     liquidity_order_data: u128,
     ckb_reserve: &mut u128,
@@ -176,8 +163,7 @@ fn mint_liquidity(
     let change_cell = load_cell(liquidity_index + 1, Source::Output)?;
     let change_lock_hash = load_cell_lock_hash(liquidity_index + 1, Source::Output)?;
 
-    if get_cell_type_hash!(liquidity_index, Source::Output) != info_in_data.liquidity_sudt_type_hash
-    {
+    if get_cell_type_hash!(liquidity_index, Source::Output) != liquidity_sudt_type_hash {
         return Err(Error::LiquiditySUDTTypeHashMismatch);
     }
 

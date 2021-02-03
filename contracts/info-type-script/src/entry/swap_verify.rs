@@ -1,8 +1,6 @@
 use alloc::vec::Vec;
 
-use num_bigint::{BigInt, BigUint};
-use num_traits::identities::Zero;
-
+use num_bigint::BigUint;
 use share::cell::{InfoCellData, SUDTAmountData, SwapRequestLockArgs};
 use share::ckb_std::ckb_types::packed::CellOutput;
 use share::ckb_std::{
@@ -15,30 +13,21 @@ use share::{decode_u128, get_cell_type_hash};
 use crate::entry::{FEE_RATE, INFO_CAPACITY, ONE, SUDT_CAPACITY, THOUSAND};
 use crate::error::Error;
 
-pub fn swap_tx_verification(begin: usize, end: usize) -> Result<(), Error> {
-    let info_in_data = InfoCellData::from_raw(&load_cell_data(0, Source::Input)?)?;
-    let pool_in_cell = load_cell(1, Source::Input)?;
-    let pool_in_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Input)?)?;
-    let info_out_cell = load_cell(0, Source::Output)?;
-    let info_out_data = InfoCellData::from_raw(&load_cell_data(0, Source::Output)?)?;
-    let pool_out_cell = load_cell(1, Source::Output)?;
-    let pool_out_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Output)?)?;
-
-    let mut ckb_reserve = info_in_data.ckb_reserve;
-    let mut sudt_reserve = info_in_data.sudt_reserve;
-    let mut total_liquidity = info_in_data.total_liquidity;
-
+pub fn swap_tx_verification(
+    info_out_cell: &CellOutput,
+    info_out_data: &InfoCellData,
+    pool_in_cell: &CellOutput,
+    pool_in_data: &SUDTAmountData,
+    pool_out_cell: &CellOutput,
+    pool_out_data: &SUDTAmountData,
+    swap_cell_count: usize,
+    ckb_reserve: &mut u128,
+    sudt_reserve: &mut u128,
+    total_liquidity: &mut u128,
+) -> Result<(), Error> {
     if info_out_cell.capacity().unpack() != INFO_CAPACITY {
         return Err(Error::InfoCapacityDiff);
     }
-
-    if info_out_data.total_liquidity != info_in_data.total_liquidity {
-        return Err(Error::InAndOutLiquidityDiff);
-    }
-
-    let ckb_got = BigInt::from(info_out_data.ckb_reserve) - info_in_data.ckb_reserve;
-    let sudt_got = BigInt::from(info_out_data.sudt_reserve) - info_in_data.sudt_reserve;
-    let zero = BigInt::zero();
 
     for (idx, req_cell) in QueryIter::new(load_cell, Source::Input).enumerate().skip(3) {
         let raw_lock_args: Vec<u8> = req_cell.lock().args().unpack();
@@ -68,15 +57,6 @@ pub fn swap_tx_verification(begin: usize, end: usize) -> Result<(), Error> {
                 &mut sudt_reserve,
             )?;
         }
-    }
-
-    if BigInt::from(pool_out_cell.capacity().unpack()) != pool_in_cell.capacity().unpack() + ckb_got
-    {
-        return Err(Error::CKBGotAmountDiff);
-    }
-
-    if BigInt::from(pool_out_data.sudt_amount) != pool_in_data.sudt_amount + sudt_got {
-        return Err(Error::SUDTGotAmountDiff);
     }
 
     Ok(())
