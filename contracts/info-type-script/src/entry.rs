@@ -1,5 +1,6 @@
+mod liquidity_verify;
+mod swap_verify;
 mod type_id;
-mod verify;
 
 use alloc::vec::Vec;
 use core::result::Result;
@@ -25,7 +26,12 @@ use type_id::verify_type_id;
 
 use crate::error::Error;
 
-const POOL_BASE_CAPACITY: u128 = 18_600_000_000;
+const ONE: u128 = 1;
+const THOUSAND: u128 = 1_000;
+const FEE_RATE: u128 = 997;
+const POOL_CAPACITY: u128 = 18_600_000_000;
+const SUDT_CAPACITY: u64 = 15_400_000_000;
+const INFO_CAPACITY: u64 = 25_000_000_000;
 
 pub static INFO_LOCK_CODE_HASH: &str =
     include!(concat!(env!("OUT_DIR"), "/info_lock_code_hash.rs"));
@@ -66,7 +72,7 @@ pub fn main() -> Result<(), Error> {
     let pool_in_cell = load_cell(1, Source::Input)?;
     let pool_in_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Input)?)?;
 
-    if (pool_in_cell.capacity().unpack() as u128) != POOL_BASE_CAPACITY + info_in_data.ckb_reserve {
+    if (pool_in_cell.capacity().unpack() as u128) != POOL_CAPACITY + info_in_data.ckb_reserve {
         return Err(Error::CKBReserveAmountDiff);
     }
 
@@ -76,9 +82,9 @@ pub fn main() -> Result<(), Error> {
 
     let req_lock_args: Vec<u8> = load_cell_lock(3, Source::Input)?.args().unpack();
     if LiquidityRequestLockArgs::from_raw(&req_lock_args).is_ok() {
-        verify::liquidity_tx_verification()?;
+        liquidity_verify::liquidity_tx_verification()?;
     } else {
-        verify::swap_tx_verification()?;
+        swap_verify::swap_tx_verification()?;
     }
 
     Ok(())
