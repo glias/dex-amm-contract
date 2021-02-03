@@ -34,7 +34,7 @@ pub fn swap_tx_verification(
         }
 
         if req_cell.type_().is_none() {
-            verify_ckb_exchange_sudt(
+            ckb_exchange_sudt(
                 idx,
                 &req_cell,
                 &req_lock_args,
@@ -43,7 +43,7 @@ pub fn swap_tx_verification(
                 sudt_reserve,
             )?;
         } else {
-            verify_sudt_exchange_ckb(
+            sudt_exchange_ckb(
                 idx,
                 &req_cell,
                 &req_lock_args,
@@ -57,7 +57,7 @@ pub fn swap_tx_verification(
     Ok(())
 }
 
-fn verify_ckb_exchange_sudt(
+fn ckb_exchange_sudt(
     index: usize,
     req_cell: &CellOutput,
     req_lock_args: &SwapRequestLockArgs,
@@ -99,7 +99,7 @@ fn verify_ckb_exchange_sudt(
     Ok(())
 }
 
-fn verify_sudt_exchange_ckb(
+fn sudt_exchange_ckb(
     index: usize,
     req_cell: &CellOutput,
     req_lock_args: &SwapRequestLockArgs,

@@ -114,9 +114,15 @@ pub fn main() -> Result<(), Error> {
 
     if (pool_out_cell.capacity().unpack() as u128)
         != (pool_in_cell.capacity().unpack() as u128 + ckb_reserve - info_in_data.ckb_reserve)
+    {
+        return Err(Error::InvalidOutputPoolCapacity);
+    }
+
+    if pool_out_data.sudt_amount
+        != pool_in_data.sudt_amount + sudt_reserve - info_in_data.sudt_reserve
         || pool_out_data.sudt_amount != info_out_data.sudt_reserve
     {
-        return Err(Error::InvalidOutputPoolData);
+        return Err(Error::InvalidPoolOutputData);
     }
 
     Ok(())
