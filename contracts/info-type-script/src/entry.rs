@@ -7,7 +7,6 @@ use core::result::Result;
 
 // Import CKB syscalls and structures
 // https://nervosnetwork.github.io/ckb-std/riscv64imac-unknown-none-elf/doc/ckb_std/index.html
-use share::cell::LiquidityRequestLockArgs;
 use share::cell::{InfoCellData, SUDTAmountData};
 use share::ckb_std::{
     ckb_constants::Source,
@@ -18,10 +17,11 @@ use share::ckb_std::{
     default_alloc,
     // debug,
     high_level::{
-        load_cell, load_cell_data, load_cell_lock, load_cell_lock_hash, load_script, QueryIter,
+        load_cell, load_cell_data, load_cell_lock_hash, load_script,
+        load_witness_args, QueryIter,
     },
 };
-use share::{blake2b, get_cell_type_hash};
+use share::{blake2b, decode_u64, get_cell_type_hash};
 use type_id::verify_type_id;
 
 use crate::error::Error;
@@ -43,23 +43,7 @@ default_alloc!(4 * 1024, 2048 * 1024, 64);
 
 pub fn main() -> Result<(), Error> {
     let info_type_code_hash = load_script()?.code_hash().unpack();
-
-    let input_info_cell_count = QueryIter::new(load_cell, Source::Input)
-        .filter(|cell| {
-            cell.type_().to_opt().map_or_else(
-                || false,
-                |script| script.code_hash().unpack() == info_type_code_hash,
-            )
-        })
-        .count();
-    let output_info_cell_count = QueryIter::new(load_cell, Source::Output)
-        .filter(|cell| {
-            cell.type_().to_opt().map_or_else(
-                || false,
-                |script| script.code_hash().unpack() == info_type_code_hash,
-            )
-        })
-        .count();
+    let (input_info_cell_count, output_info_cell_count) = get_info_count(info_type_code_hash);
 
     if input_info_cell_count == 0 && output_info_cell_count == 1 {
         verify_info_creation(&load_cell(0, Source::Output)?)?;
@@ -74,6 +58,48 @@ pub fn main() -> Result<(), Error> {
     let pool_in_cell = load_cell(1, Source::Input)?;
     let pool_in_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Input)?)?;
 
+    basic_verify(&info_in_data, &pool_in_cell, &pool_in_data)?;
+
+    let raw_witness: Vec<u8> = load_witness_args(0, Source::Input)?
+        .input_type()
+        .to_opt()
+        .unwrap()
+        .unpack();
+    let swap_cell_count = decode_u64(&raw_witness)? as usize;
+    let cell_count = QueryIter::new(load_cell, Source::Input).count();
+
+    liquidity_verify::liquidity_tx_verification(swap_cell_count + 3, cell_count)?;
+    swap_verify::swap_tx_verification(3, swap_cell_count + 3)?;
+
+    Ok(())
+}
+
+fn get_info_count(info_type_code_hash: [u8; 32]) -> (usize, usize) {
+    let input_count = QueryIter::new(load_cell, Source::Input)
+        .filter(|cell| {
+            cell.type_().to_opt().map_or_else(
+                || false,
+                |script| script.code_hash().unpack() == info_type_code_hash,
+            )
+        })
+        .count();
+    let output_count = QueryIter::new(load_cell, Source::Output)
+        .filter(|cell| {
+            cell.type_().to_opt().map_or_else(
+                || false,
+                |script| script.code_hash().unpack() == info_type_code_hash,
+            )
+        })
+        .count();
+
+    (input_count, output_count)
+}
+
+fn basic_verify(
+    info_in_data: &InfoCellData,
+    pool_in_cell: &CellOutput,
+    pool_in_data: &SUDTAmountData,
+) -> Result<(), Error> {
     if (pool_in_cell.capacity().unpack() as u128) != POOL_CAPACITY + info_in_data.ckb_reserve {
         return Err(Error::CKBReserveAmountDiff);
     }
@@ -82,17 +108,10 @@ pub fn main() -> Result<(), Error> {
         return Err(Error::SUDTReserveAmountDiff);
     }
 
-    let req_lock_args: Vec<u8> = load_cell_lock(3, Source::Input)?.args().unpack();
-    if LiquidityRequestLockArgs::from_raw(&req_lock_args).is_ok() {
-        liquidity_verify::liquidity_tx_verification()?;
-    } else {
-        swap_verify::swap_tx_verification()?;
-    }
-
     Ok(())
 }
 
-pub fn verify_info_creation(info_out_cell: &CellOutput) -> Result<(), Error> {
+fn verify_info_creation(info_out_cell: &CellOutput) -> Result<(), Error> {
     // Todo: ignore verify type id temporary
     let _ = verify_type_id();
 

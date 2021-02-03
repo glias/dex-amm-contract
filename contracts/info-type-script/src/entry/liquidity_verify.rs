@@ -18,7 +18,7 @@ use share::{decode_u128, get_cell_type_hash};
 use crate::entry::{INFO_CAPACITY, INFO_VERSION, LIQUIDITY_CELL_BASE_INDEX, ONE, SUDT_CAPACITY};
 use crate::error::Error;
 
-pub fn liquidity_tx_verification() -> Result<(), Error> {
+pub fn liquidity_tx_verification(begin: usize, end: usize) -> Result<(), Error> {
     let info_in_data = InfoCellData::from_raw(&load_cell_data(0, Source::Input)?)?;
     let pool_in_cell = load_cell(1, Source::Input)?;
     let info_out_cell = load_cell(0, Source::Output)?;

@@ -15,7 +15,7 @@ use share::{decode_u128, get_cell_type_hash};
 use crate::entry::{FEE_RATE, INFO_CAPACITY, ONE, SUDT_CAPACITY, THOUSAND};
 use crate::error::Error;
 
-pub fn swap_tx_verification() -> Result<(), Error> {
+pub fn swap_tx_verification(begin: usize, end: usize) -> Result<(), Error> {
     let info_in_data = InfoCellData::from_raw(&load_cell_data(0, Source::Input)?)?;
     let pool_in_cell = load_cell(1, Source::Input)?;
     let pool_in_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Input)?)?;
