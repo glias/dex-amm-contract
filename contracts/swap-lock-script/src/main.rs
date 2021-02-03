@@ -25,8 +25,6 @@ use share::ckb_std::{
 
 use crate::error::Error;
 
-const SUDT_CAPACITY: u64 = 15_400_000_000;
-
 // Alloc 4K fast HEAP + 2M HEAP to receives PrefilledData
 default_alloc!(4 * 1024, 2048 * 1024, 64);
 
