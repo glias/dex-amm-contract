@@ -127,10 +127,6 @@ fn mint_liquidity(
         return Err(Error::UnknownLiquidity);
     }
 
-    let cur_liquidity = *total_liquidity;
-    let cur_ckb_reserve = *ckb_reserve;
-    let cur_sudt_reserve = *sudt_reserve;
-
     let relative_index = liquidity_cell_index - base_index;
     let liquidity_index = relative_index * 2 + base_index;
 
@@ -169,7 +165,7 @@ fn mint_liquidity(
             - change_cell.capacity().unpack() as u128;
 
         if BigUint::from(ckb_injected)
-            != (BigUint::from(sudt_injected) * cur_ckb_reserve / cur_sudt_reserve) + ONE
+            != (BigUint::from(sudt_injected) * (*ckb_reserve) / *sudt_reserve) + ONE
         {
             return Err(Error::LiquidityPoolTokenDiff);
         }
@@ -180,7 +176,7 @@ fn mint_liquidity(
         }
 
         if BigUint::from(user_liquidity)
-            != (BigUint::from(sudt_injected) * cur_liquidity / cur_sudt_reserve) + ONE
+            != (BigUint::from(sudt_injected) * (*total_liquidity) / *sudt_reserve) + ONE
         {
             return Err(Error::SUDTInjectAmountDiff);
         }
@@ -199,7 +195,7 @@ fn mint_liquidity(
         ckb_injected = (liquidity_order_cell.capacity().unpack() - SUDT_CAPACITY * 2) as u128;
 
         if BigUint::from(sudt_injected)
-            != (BigUint::from(ckb_injected) * cur_sudt_reserve / cur_ckb_reserve) + ONE
+            != (BigUint::from(ckb_injected) * (*sudt_reserve) / (*ckb_reserve)) + ONE
         {
             return Err(Error::LiquidityPoolTokenDiff);
         }
@@ -210,7 +206,7 @@ fn mint_liquidity(
         }
 
         if BigUint::from(user_liquidity)
-            != (BigUint::from(ckb_injected) * cur_liquidity / cur_ckb_reserve) + ONE
+            != (BigUint::from(ckb_injected) * (*total_liquidity) / (*ckb_reserve)) + ONE
         {
             return Err(Error::CKBInjectAmountDiff);
         }
@@ -237,10 +233,6 @@ fn burn_liquidity(
     if *total_liquidity == 0 || liquidity_order_data == 0 {
         return Err(Error::BurnLiquidityFailed);
     }
-
-    let cur_liquidity = *total_liquidity;
-    let cur_ckb_reserve = *ckb_reserve;
-    let cur_sudt_reserve = *sudt_reserve;
 
     let relative_index = index - base_index;
     let sudt_index = relative_index * 2 + base_index;
@@ -288,11 +280,11 @@ fn burn_liquidity(
         return Err(Error::InvalidMinSUDTGot);
     }
 
-    if user_ckb_got != (BigUint::from(cur_ckb_reserve) * burned_liquidity / cur_liquidity) + ONE {
+    if user_ckb_got != (BigUint::from(*ckb_reserve) * burned_liquidity / *total_liquidity) + ONE {
         return Err(Error::CKBGotAmountDiff);
     }
 
-    if user_sudt_got != (BigUint::from(cur_sudt_reserve) * burned_liquidity / cur_liquidity) + ONE {
+    if user_sudt_got != (BigUint::from(*sudt_reserve) * burned_liquidity / *total_liquidity) + ONE {
         return Err(Error::SUDTGotAmountDiff);
     }
 
