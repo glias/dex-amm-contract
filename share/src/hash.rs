@@ -45,7 +45,7 @@ pub fn blake2b_vec<T: AsRef<[u8]> + Ord>(s: &mut [T]) -> [u8; 32] {
     let mut res = [0u8; 32];
     let mut blake2b = new_blake2b();
 
-    for i in s.into_iter() {
+    for i in s.iter_mut() {
         blake2b.update(i.as_ref());
     }
 

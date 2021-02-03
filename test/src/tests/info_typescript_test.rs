@@ -267,7 +267,8 @@ test_contract!(
                 .liquidity_sudt_type_hash(*LIQUIDITY_SUDT_TYPE_HASH)
                 .build(),
         )
-        .custom_lock_args(Bytes::from(hash.clone()));
+        .custom_lock_args(Bytes::from(hash.clone()))
+        .custom_witness(witness_args_input_type(0));
 
         let input_1 = Inputs::new_pool(SudtCell::new(POOL_CAPACITY, 0))
             .custom_lock_args(Bytes::from(hash.clone()));
@@ -339,7 +340,8 @@ test_contract!(
                 .liquidity_sudt_type_hash(*LIQUIDITY_SUDT_TYPE_HASH)
                 .build(),
         )
-        .custom_lock_args(Bytes::from(hash.clone()));
+        .custom_lock_args(Bytes::from(hash.clone()))
+        .custom_witness(witness_args_input_type(0));
         let input_1 = Inputs::new_pool(SudtCell::new(POOL_CAPACITY + 50, 50))
             .custom_lock_args(Bytes::from(hash.clone()));
         let input_2 = Inputs::new_matcher(FreeCell::new(100));
@@ -409,7 +411,8 @@ test_contract!(
                 .liquidity_sudt_type_hash(*LIQUIDITY_SUDT_TYPE_HASH)
                 .build(),
         )
-        .custom_lock_args(Bytes::from(hash.clone()));
+        .custom_lock_args(Bytes::from(hash.clone()))
+        .custom_witness(witness_args_input_type(0));
 
         // pool_in.capcity = POOL_BASE_CAPCITY + info_in.ckb_reserve
         // pool_in.amount = info_in.sudt_reserve
@@ -486,7 +489,8 @@ test_contract!(
                 .liquidity_sudt_type_hash(*LIQUIDITY_SUDT_TYPE_HASH)
                 .build(),
         )
-        .custom_lock_args(Bytes::from(hash.clone()));
+        .custom_lock_args(Bytes::from(hash.clone()))
+        .custom_witness(witness_args_input_type(0));
 
         let input_1 = Inputs::new_pool(SudtCell::new(POOL_CAPACITY + 100, 100))
             .custom_lock_args(Bytes::from(hash.clone()));
@@ -560,10 +564,9 @@ test_contract!(
                 .liquidity_sudt_type_hash(*LIQUIDITY_SUDT_TYPE_HASH)
                 .build(),
         )
-        .custom_lock_args(Bytes::from(hash.clone()));
+        .custom_lock_args(Bytes::from(hash.clone()))
+        .custom_witness(witness_args_input_type(1));
 
-        // pool_in.capcity = POOL_BASE_CAPCITY + info_in.ckb_reserve
-        // pool_in.amount = info_in.sudt_reserve
         let input_1 = Inputs::new_pool(SudtCell::new(POOL_CAPACITY + 100, 100))
             .custom_lock_args(Bytes::from(hash.clone()));
         let input_2 = Inputs::new_matcher(FreeCell::new(100));
@@ -571,7 +574,7 @@ test_contract!(
         let swap_lock_args = SwapRequestLockArgsBuilder::default()
             .user_lock_hash(user_lock_hash(0))
             .version(1)
-            .amount_out_min(50)
+            .amount_out_min(35)
             .sudt_type_hash(*SUDT_TYPE_HASH)
             .build();
         let input_3 = Inputs::new_swap(SwapRequestCell::new_ckb(SUDT_CAPACITY + 70))
@@ -591,7 +594,7 @@ test_contract!(
             .custom_lock_args(Bytes::from(hash));
         let output_2 = Outputs::new_matcher(FreeCell::new(150));
         let output_3 =
-            Outputs::new_sudt(SudtCell::new(SUDT_CAPACITY, 60)).custom_lock_args(user_lock_args(0));
+            Outputs::new_sudt(SudtCell::new(SUDT_CAPACITY, 42)).custom_lock_args(user_lock_args(0));
 
         let (mut context, tx) = build_test_context(vec![input_0, input_1, input_2, input_3], vec![
             output_0, output_1, output_2, output_3,

@@ -14,8 +14,7 @@ use share::ckb_std::{
         packed::{Byte, CellOutput},
         prelude::*,
     },
-    default_alloc,
-    // debug,
+    debug, default_alloc,
     high_level::{
         load_cell, load_cell_data, load_cell_lock_hash, load_script, load_witness_args, QueryIter,
     },
@@ -31,7 +30,6 @@ const POOL_CAPACITY: u128 = 18_600_000_000;
 const SUDT_CAPACITY: u64 = 15_400_000_000;
 const INFO_CAPACITY: u64 = 25_000_000_000;
 const INFO_VERSION: u8 = 1;
-const LIQUIDITY_CELL_BASE_INDEX: usize = 3;
 
 pub static INFO_LOCK_CODE_HASH: &str =
     include!(concat!(env!("OUT_DIR"), "/info_lock_code_hash.rs"));
@@ -73,65 +71,9 @@ pub fn main() -> Result<(), Error> {
         .unwrap()
         .unpack();
     let swap_cell_count = decode_u64(&raw_witness)? as usize;
-    let cell_count = QueryIter::new(load_cell, Source::Input).count();
+    let output_cell_count = QueryIter::new(load_cell, Source::Output).count();
 
-    if cell_count == 4 && swap_cell_count == 0 {
-        initial_mint_liquidity(
-            &info_out_cell,
-            &info_out_data,
-            &pool_in_cell,
-            &pool_in_data,
-            &pool_out_cell,
-            &pool_out_data,
-            &mut ckb_reserve,
-            &mut sudt_reserve,
-            &mut total_liquidity,
-            liquidity_sudt_type_hash,
-        )?;
-    }
-
-    liquidity_verify::liquidity_tx_verification(
-        &info_out_cell,
-        &info_out_data,
-        &pool_in_cell,
-        &pool_in_data,
-        &pool_out_cell,
-        &pool_out_data,
-        swap_cell_count,
-        &mut ckb_reserve,
-        &mut sudt_reserve,
-        &mut total_liquidity,
-        liquidity_sudt_type_hash,
-    )?;
-    swap_verify::swap_tx_verification(
-        &info_out_cell,
-        &info_out_data,
-        &pool_in_cell,
-        &pool_in_data,
-        &pool_out_cell,
-        &pool_out_data,
-        swap_cell_count,
-        &mut ckb_reserve,
-        &mut sudt_reserve,
-        &mut total_liquidity,
-    )?;
-
-    Ok(())
-}
-
-fn initial_mint_liquidity(
-    info_out_cell: &CellOutput,
-    info_out_data: &InfoCellData,
-    pool_in_cell: &CellOutput,
-    pool_in_data: &SUDTAmountData,
-    pool_out_cell: &CellOutput,
-    pool_out_data: &SUDTAmountData,
-    ckb_reserve: &mut u128,
-    sudt_reserve: &mut u128,
-    total_liquidity: &mut u128,
-    liquidity_sudt_type_hash: [u8; 32],
-) -> Result<(), Error> {
-    if *total_liquidity == 0 {
+    if output_cell_count == 4 && swap_cell_count == 0 {
         liquidity_verify::verify_initial_mint(
             liquidity_sudt_type_hash,
             &mut ckb_reserve,
@@ -139,28 +81,42 @@ fn initial_mint_liquidity(
             &mut total_liquidity,
         )?;
     } else {
-        return Err(Error::InvalidInitialLiquidityTx);
+        swap_verify::swap_tx_verification(
+            &info_out_cell,
+            swap_cell_count,
+            &mut ckb_reserve,
+            &mut sudt_reserve,
+        )?;
+
+        liquidity_verify::liquidity_tx_verification(
+            swap_cell_count,
+            &mut ckb_reserve,
+            &mut sudt_reserve,
+            &mut total_liquidity,
+            liquidity_sudt_type_hash,
+        )?;
     }
 
     if info_out_cell.capacity().unpack() != INFO_CAPACITY
-        || info_out_data.ckb_reserve != *ckb_reserve
+        || info_out_data.ckb_reserve != ckb_reserve
     {
+        debug!("{:?}", ckb_reserve);
         return Err(Error::InvalidCKBReserve);
     }
 
-    if info_out_data.sudt_reserve != *sudt_reserve {
+    if info_out_data.sudt_reserve != sudt_reserve {
         return Err(Error::InvalidSUDTReserve);
     }
 
-    if info_out_data.total_liquidity != *total_liquidity {
+    if info_out_data.total_liquidity != total_liquidity {
         return Err(Error::InvalidTotalLiquidity);
     }
 
     if (pool_out_cell.capacity().unpack() as u128)
-        != (pool_in_cell.capacity().unpack() as u128 + info_out_data.ckb_reserve - (*ckb_reserve))
+        != (pool_in_cell.capacity().unpack() as u128 + ckb_reserve - info_in_data.ckb_reserve)
         || pool_out_data.sudt_amount != info_out_data.sudt_reserve
     {
-        return Err(Error::InvalidCKBAmount);
+        return Err(Error::InvalidOutputPoolData);
     }
 
     Ok(())

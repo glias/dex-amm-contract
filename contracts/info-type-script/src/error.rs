@@ -62,6 +62,7 @@ pub enum Error {
     SwapAmountLessThanMin = 55,
     InvalidSwapOutputData,
     SwapInputSUDTAmountEqZero,
+    InvalidOutputPoolData,
 }
 
 impl From<SysError> for Error {

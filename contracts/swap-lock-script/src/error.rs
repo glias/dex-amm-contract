@@ -10,13 +10,6 @@ pub enum Error {
     LengthNotEnough,
     Encoding,
     MissingTypeScript = 5,
-    InvalidOutputLockHash,
-    InvalidOutputTypeHash,
-    SwapAmountLessThanMin,
-    InvalidCapacity,
-    InvalidOutputData = 10,
-    RequestCapcityEqSUDTCapcity,
-    InputSUDTAmountEqZero,
 }
 
 impl From<SysError> for Error {
