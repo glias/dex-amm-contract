@@ -615,3 +615,72 @@ test_contract!(
     false,
     "info-typescript-sim"
 );
+
+test_contract!(
+    sudt_swap_ckb_success,
+    {
+        let mut hash = blake2b!("ckb", *SUDT_TYPE_HASH).to_vec();
+        let mut hash_1 = info_cell_type_hash(0).to_vec();
+        hash.append(&mut hash_1);
+        assert_eq!(hash.len(), 64);
+
+        let input_0 = Inputs::new_info(
+            InfoCellBuilder::default()
+                .capacity(1000)
+                .total_liquidity(100)
+                .sudt_reserve(100)
+                .ckb_reserve(100)
+                .liquidity_sudt_type_hash(*LIQUIDITY_SUDT_TYPE_HASH)
+                .build(),
+        )
+        .custom_lock_args(Bytes::from(hash.clone()))
+        .custom_witness(witness_args_input_type(1));
+
+        let input_1 = Inputs::new_pool(SudtCell::new(POOL_CAPACITY + 100, 100))
+            .custom_lock_args(Bytes::from(hash.clone()));
+        let input_2 = Inputs::new_matcher(FreeCell::new(100));
+
+        let swap_lock_args = SwapRequestLockArgsBuilder::default()
+            .user_lock_hash(user_lock_hash(0))
+            .version(1)
+            .amount_out_min(33)
+            .sudt_type_hash(*SUDT_TYPE_HASH)
+            .build();
+        let input_3 = Inputs::new_swap(SwapRequestCell::new_sudt(SUDT_CAPACITY, 50))
+            .custom_lock_args(swap_lock_args.as_bytes());
+
+        let output_0 = Outputs::new_info(
+            InfoCellBuilder::default()
+                .capacity(INFO_CAPACITY)
+                .ckb_reserve(66)
+                .sudt_reserve(150)
+                .total_liquidity(100)
+                .liquidity_sudt_type_hash(*SUDT_TYPE_HASH)
+                .build(),
+        )
+        .custom_lock_args(Bytes::from(hash.clone()));
+        let output_1 = Outputs::new_pool(SudtCell::new(POOL_CAPACITY + 66, 150))
+            .custom_lock_args(Bytes::from(hash));
+        let output_2 = Outputs::new_matcher(FreeCell::new(150));
+        let output_3 =
+            Outputs::new_ckb(FreeCell::new(SUDT_CAPACITY + 34)).custom_lock_args(user_lock_args(0));
+
+        let (mut context, tx) = build_test_context(vec![input_0, input_1, input_2, input_3], vec![
+            output_0, output_1, output_2, output_3,
+        ]);
+        let tx = context.complete_tx(tx);
+
+        // let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
+        // assert_error_eq!(err, tx_error(, 0));
+
+        let cycle = context
+            .verify_tx(&tx, MAX_CYCLES)
+            .expect("pass verification");
+
+        println!("cycle used {:?}", cycle);
+
+        (context, tx)
+    },
+    false,
+    "info-typescript-sim"
+);
