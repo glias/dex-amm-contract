@@ -10,6 +10,7 @@ pub enum Error {
     LengthNotEnough,
     Encoding,
     MissingTypeScript = 5,
+    InvalidOutputLockHash,
 }
 
 impl From<SysError> for Error {

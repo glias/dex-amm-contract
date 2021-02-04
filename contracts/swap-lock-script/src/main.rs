@@ -15,12 +15,15 @@ mod error;
 use alloc::vec::Vec;
 use core::result::Result;
 
+use share::cell::SwapRequestLockArgs;
 use share::ckb_std::{
     self,
     ckb_constants::Source,
     ckb_types::prelude::*,
     default_alloc,
-    high_level::{load_cell_lock_hash, load_script, load_witness_args, QueryIter},
+    high_level::{
+        load_cell_lock_hash, load_script, load_script_hash, load_witness_args, QueryIter,
+    },
 };
 
 use crate::error::Error;
@@ -48,6 +51,18 @@ fn main() -> Result<(), Error> {
             && load_witness_args(idx, Source::Input)?.total_size() != 0
         {
             return Ok(());
+        }
+    }
+
+    let self_hash = load_script_hash()?;
+    let req_lock_args = SwapRequestLockArgs::from_raw(&script_args)?;
+
+    for idx in QueryIter::new(load_cell_lock_hash, Source::Input)
+        .enumerate()
+        .filter_map(|(idx, hash)| if hash == self_hash { Some(idx) } else { None })
+    {
+        if load_cell_lock_hash(idx, Source::Output)? != req_lock_args.user_lock_hash {
+            return Err(Error::InvalidOutputLockHash);
         }
     }
 

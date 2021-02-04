@@ -1,6 +1,6 @@
 [[cells]]
 name = "info-type-script"
-enable_type_id = true
+enable_type_id = false
 location = { file = "build/release/info-type-script" }
 
 [[cells]]
