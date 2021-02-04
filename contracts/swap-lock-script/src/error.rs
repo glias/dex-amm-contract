@@ -11,6 +11,12 @@ pub enum Error {
     Encoding,
     MissingTypeScript = 5,
     InvalidOutputLockHash,
+    RequestCapcityEqSUDTCapcity,
+    InvalidOutputTypeHash,
+    InvalidCapacity,
+    SwapAmountLessThanMin = 10,
+    InputSUDTAmountEqZero,
+    InvalidOutputData,
 }
 
 impl From<SysError> for Error {
