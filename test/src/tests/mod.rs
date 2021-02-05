@@ -102,3 +102,11 @@ fn liquidity_sudt_type_args() -> Bytes {
 fn user_lock_args(idx: usize) -> Bytes {
     Bytes::from(idx.to_le_bytes().to_vec())
 }
+
+fn witness_args_input_type(num: u64) -> Bytes {
+    let byte_opt = Some(Bytes::from(num.to_le_bytes().to_vec())).pack();
+    WitnessArgsBuilder::default()
+        .input_type(byte_opt)
+        .build()
+        .as_bytes()
+}

@@ -16,8 +16,8 @@ use alloc::vec::Vec;
 use core::result::Result;
 
 use num_bigint::BigUint;
-use share::cell::SwapRequestLockArgs;
 use share::ckb_std::{
+    self,
     ckb_constants::Source,
     ckb_types::prelude::*,
     default_alloc,
@@ -26,7 +26,7 @@ use share::ckb_std::{
         load_witness_args, QueryIter,
     },
 };
-use share::{ckb_std, decode_u128, get_cell_type_hash};
+use share::{cell::SwapRequestLockArgs, decode_u128, get_cell_type_hash};
 
 use crate::error::Error;
 
@@ -59,13 +59,12 @@ fn main() -> Result<(), Error> {
     }
 
     let self_hash = load_script_hash()?;
-    let group_input_index = QueryIter::new(load_cell_lock_hash, Source::Input)
-        .enumerate()
-        .filter_map(|(idx, hash)| if hash == self_hash { Some(idx) } else { None })
-        .collect::<Vec<_>>();
     let req_lock_args = SwapRequestLockArgs::from_raw(&script_args)?;
 
-    for index in group_input_index {
+    for index in QueryIter::new(load_cell_lock_hash, Source::Input)
+        .enumerate()
+        .filter_map(|(idx, hash)| if hash == self_hash { Some(idx) } else { None })
+    {
         let req_cell = load_cell(index, Source::Input)?;
         let output_cell = load_cell(index, Source::Output)?;
 
