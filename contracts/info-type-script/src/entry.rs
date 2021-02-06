@@ -14,7 +14,7 @@ use share::ckb_std::{
         packed::{Byte, CellOutput},
         prelude::*,
     },
-    debug, default_alloc,
+    default_alloc,
     high_level::{
         load_cell, load_cell_data, load_cell_lock_hash, load_script, load_witness_args, QueryIter,
     },
@@ -100,7 +100,6 @@ pub fn main() -> Result<(), Error> {
     if info_out_cell.capacity().unpack() != INFO_CAPACITY
         || info_out_data.ckb_reserve != ckb_reserve
     {
-        debug!("{:?}", ckb_reserve);
         return Err(Error::InvalidCKBReserve);
     }
 
