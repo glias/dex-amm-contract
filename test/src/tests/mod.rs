@@ -20,7 +20,7 @@ use crate::{test_contract, Loader};
 
 const MAX_CYCLES: u64 = 10000_0000;
 const POOL_CAPACITY: u64 = 18_600_000_000;
-const SUDT_CAPACITY: u64 = 15_400_000_000;
+const SUDT_CAPACITY: u64 = 14_200_000_000;
 const INFO_CAPACITY: u64 = 25_000_000_000;
 
 lazy_static::lazy_static! {

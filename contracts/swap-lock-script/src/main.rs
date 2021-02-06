@@ -30,7 +30,7 @@ use share::{cell::SwapRequestLockArgs, decode_u128, get_cell_type_hash};
 
 use crate::error::Error;
 
-const SUDT_CAPACITY: u64 = 15_400_000_000;
+const SUDT_CAPACITY: u64 = 14_200_000_000;
 
 // Alloc 4K fast HEAP + 2M HEAP to receives PrefilledData
 default_alloc!(4 * 1024, 2048 * 1024, 64);
