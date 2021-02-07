@@ -14,7 +14,7 @@ use share::ckb_std::{
         packed::{Byte, CellOutput},
         prelude::*,
     },
-    debug, default_alloc,
+    default_alloc,
     high_level::{
         load_cell, load_cell_data, load_cell_lock_hash, load_script, load_witness_args, QueryIter,
     },
@@ -27,7 +27,7 @@ const ONE: u128 = 1;
 const THOUSAND: u128 = 1_000;
 const FEE_RATE: u128 = 997;
 const POOL_CAPACITY: u128 = 18_600_000_000;
-const SUDT_CAPACITY: u64 = 15_400_000_000;
+const SUDT_CAPACITY: u64 = 14_200_000_000;
 const INFO_CAPACITY: u64 = 25_000_000_000;
 const INFO_VERSION: u8 = 1;
 
@@ -100,7 +100,6 @@ pub fn main() -> Result<(), Error> {
     if info_out_cell.capacity().unpack() != INFO_CAPACITY
         || info_out_data.ckb_reserve != ckb_reserve
     {
-        debug!("{:?}", ckb_reserve);
         return Err(Error::InvalidCKBReserve);
     }
 
