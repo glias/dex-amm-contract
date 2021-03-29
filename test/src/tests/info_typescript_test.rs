@@ -12,10 +12,18 @@ const ERR_OUTPUT_CELLS_LOCK_HASH_DIFF: i8 = 35;
 test_contract!(
     info_creation_success,
     {
-        let input = Inputs::new_sudt(SudtCell::new(21000, 1500));
+        let sudt_data: Uint128 = 1500u128.pack();
+        let input_out_point =
+            sudt_input_out_point(21000, user_lock_args(0), None, sudt_data.as_bytes());
+        let input_out_point_tx_hash: [u8; 32] = input_out_point.tx_hash().unpack();
+
+        let input = Inputs::new_sudt(SudtCell::new_with_out_point(21000, 1500, input_out_point));
+
+        let hash = blake2b!(input_out_point_tx_hash, 0u64.to_le_bytes());
+        let type_id = Bytes::from(hash.to_vec());
 
         let mut hash = blake2b!("ckb", *SUDT_TYPE_HASH).to_vec();
-        let mut hash_1 = info_cell_type_hash(0).to_vec();
+        let mut hash_1 = info_cell_type_hash(type_id.clone()).to_vec();
         hash.append(&mut hash_1);
         assert_eq!(hash.len(), 64);
 
@@ -27,7 +35,8 @@ test_contract!(
                 .liquidity_sudt_type_hash(*SUDT_TYPE_HASH)
                 .build(),
         )
-        .custom_lock_args(Bytes::from(hash.clone()));
+        .custom_lock_args(Bytes::from(hash.clone()))
+        .custom_type_args(type_id);
 
         let output_1 =
             Outputs::new_pool(SudtCell::new(21000, 1500)).custom_lock_args(Bytes::from(hash));
@@ -53,10 +62,18 @@ test_contract!(
 test_contract!(
     info_creation_output_three_cell_with_info_lock_hash,
     {
-        let input = Inputs::new_sudt(SudtCell::new(21000, 1500));
+        let sudt_data: Uint128 = 1500u128.pack();
+        let input_out_point =
+            sudt_input_out_point(21000, user_lock_args(0), None, sudt_data.as_bytes());
+        let input_out_point_tx_hash: [u8; 32] = input_out_point.tx_hash().unpack();
+
+        let input = Inputs::new_sudt(SudtCell::new_with_out_point(21000, 1500, input_out_point));
+
+        let hash = blake2b!(input_out_point_tx_hash, 0u64.to_le_bytes());
+        let type_id = Bytes::from(hash.to_vec());
 
         let mut hash = blake2b!("ckb", *SUDT_TYPE_HASH).to_vec();
-        let mut hash_1 = info_cell_type_hash(0).to_vec();
+        let mut hash_1 = info_cell_type_hash(type_id.clone()).to_vec();
         hash.append(&mut hash_1);
         assert_eq!(hash.len(), 64);
 
@@ -68,7 +85,8 @@ test_contract!(
                 .liquidity_sudt_type_hash(*SUDT_TYPE_HASH)
                 .build(),
         )
-        .custom_lock_args(Bytes::from(hash.clone()));
+        .custom_lock_args(Bytes::from(hash.clone()))
+        .custom_type_args(type_id);
 
         let output_1 = Outputs::new_pool(SudtCell::new(21000, 1500))
             .custom_lock_args(Bytes::from(hash.clone()));
@@ -99,10 +117,18 @@ test_contract!(
 test_contract!(
     info_creation_info_out_lock_args_first_half_diff,
     {
-        let input = Inputs::new_sudt(SudtCell::new(21000, 1500));
+        let sudt_data: Uint128 = 1500u128.pack();
+        let input_out_point =
+            sudt_input_out_point(21000, user_lock_args(0), None, sudt_data.as_bytes());
+        let input_out_point_tx_hash: [u8; 32] = input_out_point.tx_hash().unpack();
+
+        let input = Inputs::new_sudt(SudtCell::new_with_out_point(21000, 1500, input_out_point));
+
+        let hash = blake2b!(input_out_point_tx_hash, 0u64.to_le_bytes());
+        let type_id = Bytes::from(hash.to_vec());
 
         let mut hash = blake2b!("sckb", *SUDT_TYPE_HASH).to_vec();
-        let mut hash_1 = info_cell_type_hash(0).to_vec();
+        let mut hash_1 = info_cell_type_hash(type_id.clone()).to_vec();
         hash.append(&mut hash_1);
         assert_eq!(hash.len(), 64);
 
@@ -114,7 +140,8 @@ test_contract!(
                 .liquidity_sudt_type_hash(*SUDT_TYPE_HASH)
                 .build(),
         )
-        .custom_lock_args(Bytes::from(hash.clone()));
+        .custom_lock_args(Bytes::from(hash.clone()))
+        .custom_type_args(type_id);
 
         let output_1 = Outputs::new_pool(SudtCell::new(21000, 1500))
             .custom_lock_args(Bytes::from(hash.clone()));
@@ -137,10 +164,18 @@ test_contract!(
 test_contract!(
     info_creation_info_out_lock_args_second_half_diff,
     {
-        let input = Inputs::new_sudt(SudtCell::new(21000, 1500));
+        let sudt_data: Uint128 = 1500u128.pack();
+        let input_out_point =
+            sudt_input_out_point(21000, user_lock_args(0), None, sudt_data.as_bytes());
+        let input_out_point_tx_hash: [u8; 32] = input_out_point.tx_hash().unpack();
+
+        let input = Inputs::new_sudt(SudtCell::new_with_out_point(21000, 1500, input_out_point));
+
+        let hash = blake2b!(input_out_point_tx_hash, 0u64.to_le_bytes());
+        let type_id = Bytes::from(hash.to_vec());
 
         let mut hash = blake2b!("ckb", *SUDT_TYPE_HASH).to_vec();
-        let mut hash_1 = info_cell_type_hash(0).to_vec();
+        let mut hash_1 = info_cell_type_hash(type_id.clone()).to_vec();
         hash_1.reverse();
         hash.append(&mut hash_1);
         assert_eq!(hash.len(), 64);
@@ -153,7 +188,8 @@ test_contract!(
                 .liquidity_sudt_type_hash(*SUDT_TYPE_HASH)
                 .build(),
         )
-        .custom_lock_args(Bytes::from(hash.clone()));
+        .custom_lock_args(Bytes::from(hash.clone()))
+        .custom_type_args(type_id);
 
         let output_1 = Outputs::new_pool(SudtCell::new(21000, 1500))
             .custom_lock_args(Bytes::from(hash.clone()));
@@ -176,10 +212,18 @@ test_contract!(
 test_contract!(
     info_creation_output_cells_lock_hash_diff,
     {
-        let input = Inputs::new_sudt(SudtCell::new(21000, 1500));
+        let sudt_data: Uint128 = 1500u128.pack();
+        let input_out_point =
+            sudt_input_out_point(21000, user_lock_args(0), None, sudt_data.as_bytes());
+        let input_out_point_tx_hash: [u8; 32] = input_out_point.tx_hash().unpack();
+
+        let input = Inputs::new_sudt(SudtCell::new_with_out_point(21000, 1500, input_out_point));
+
+        let hash = blake2b!(input_out_point_tx_hash, 0u64.to_le_bytes());
+        let type_id = Bytes::from(hash.to_vec());
 
         let mut hash = blake2b!("ckb", *SUDT_TYPE_HASH).to_vec();
-        let mut hash_1 = info_cell_type_hash(0).to_vec();
+        let mut hash_1 = info_cell_type_hash(type_id.clone()).to_vec();
         hash.append(&mut hash_1);
         assert_eq!(hash.len(), 64);
 
@@ -191,7 +235,8 @@ test_contract!(
                 .liquidity_sudt_type_hash(*SUDT_TYPE_HASH)
                 .build(),
         )
-        .custom_lock_args(Bytes::from(hash.clone()));
+        .custom_lock_args(Bytes::from(hash.clone()))
+        .custom_type_args(type_id);
 
         let output_1 = Outputs::new_pool(SudtCell::new(21000, 1500))
             .custom_lock_args(Bytes::from(&b"changed_lock_hash"[..]));
@@ -214,10 +259,18 @@ test_contract!(
 test_contract!(
     info_creation_pool_cell_data_too_short,
     {
-        let input = Inputs::new_sudt(SudtCell::new(21000, 1500));
+        let sudt_data: Uint128 = 1500u128.pack();
+        let input_out_point =
+            sudt_input_out_point(21000, user_lock_args(0), None, sudt_data.as_bytes());
+        let input_out_point_tx_hash: [u8; 32] = input_out_point.tx_hash().unpack();
+
+        let input = Inputs::new_sudt(SudtCell::new_with_out_point(21000, 1500, input_out_point));
+
+        let hash = blake2b!(input_out_point_tx_hash, 0u64.to_le_bytes());
+        let type_id = Bytes::from(hash.to_vec());
 
         let mut hash = blake2b!("ckb", *SUDT_TYPE_HASH).to_vec();
-        let mut hash_1 = info_cell_type_hash(0).to_vec();
+        let mut hash_1 = info_cell_type_hash(type_id.clone()).to_vec();
         hash.append(&mut hash_1);
         assert_eq!(hash.len(), 64);
 
@@ -229,7 +282,8 @@ test_contract!(
                 .liquidity_sudt_type_hash(*SUDT_TYPE_HASH)
                 .build(),
         )
-        .custom_lock_args(Bytes::from(hash.clone()));
+        .custom_lock_args(Bytes::from(hash.clone()))
+        .custom_type_args(type_id);
 
         let output_1 =
             Outputs::new_pool(SudtCell::new_unchecked(21000, Bytes::from(vec![0, 1, 2])))
@@ -257,7 +311,7 @@ test_contract!(
     initial_mint_success,
     {
         let mut hash = blake2b!("ckb", *SUDT_TYPE_HASH).to_vec();
-        let mut hash_1 = info_cell_type_hash(0).to_vec();
+        let mut hash_1 = info_cell_type_hash(info_type_args(0)).to_vec();
         hash.append(&mut hash_1);
         assert_eq!(hash.len(), 64);
 
@@ -279,7 +333,7 @@ test_contract!(
             .version(1)
             .sudt_min(0)
             .ckb_min(0)
-            .info_type_hash(info_cell_type_hash(0))
+            .info_type_hash(info_cell_type_hash(info_type_args(0)))
             .tips(0)
             .tips_sudt(0)
             .build();
@@ -327,7 +381,7 @@ test_contract!(
     mint_liquidity_change_ckb_success,
     {
         let mut hash = blake2b!("ckb", *SUDT_TYPE_HASH).to_vec();
-        let mut hash_1 = info_cell_type_hash(0).to_vec();
+        let mut hash_1 = info_cell_type_hash(info_type_args(0)).to_vec();
         hash.append(&mut hash_1);
         assert_eq!(hash.len(), 64);
 
@@ -351,7 +405,7 @@ test_contract!(
             .version(1)
             .sudt_min(0)
             .ckb_min(30)
-            .info_type_hash(info_cell_type_hash(0))
+            .info_type_hash(info_cell_type_hash(info_type_args(0)))
             .tips(0)
             .tips_sudt(0)
             .build();
@@ -398,7 +452,7 @@ test_contract!(
     mint_liquidity_change_sudt_success,
     {
         let mut hash = blake2b!("ckb", *SUDT_TYPE_HASH).to_vec();
-        let mut hash_1 = info_cell_type_hash(0).to_vec();
+        let mut hash_1 = info_cell_type_hash(info_type_args(0)).to_vec();
         hash.append(&mut hash_1);
         assert_eq!(hash.len(), 64);
 
@@ -425,7 +479,7 @@ test_contract!(
             .version(1)
             .sudt_min(80)
             .ckb_min(30)
-            .info_type_hash(info_cell_type_hash(0))
+            .info_type_hash(info_cell_type_hash(info_type_args(0)))
             .tips(0)
             .tips_sudt(0)
             .build();
@@ -476,7 +530,7 @@ test_contract!(
     burn_liquidity_success,
     {
         let mut hash = blake2b!("ckb", *SUDT_TYPE_HASH).to_vec();
-        let mut hash_1 = info_cell_type_hash(0).to_vec();
+        let mut hash_1 = info_cell_type_hash(info_type_args(0)).to_vec();
         hash.append(&mut hash_1);
         assert_eq!(hash.len(), 64);
 
@@ -501,7 +555,7 @@ test_contract!(
             .version(1)
             .sudt_min(50)
             .ckb_min(30)
-            .info_type_hash(info_cell_type_hash(0))
+            .info_type_hash(info_cell_type_hash(info_type_args(0)))
             .tips(0)
             .tips_sudt(0)
             .build();
@@ -551,7 +605,7 @@ test_contract!(
     ckb_swap_sudt_success,
     {
         let mut hash = blake2b!("ckb", *SUDT_TYPE_HASH).to_vec();
-        let mut hash_1 = info_cell_type_hash(0).to_vec();
+        let mut hash_1 = info_cell_type_hash(info_type_args(0)).to_vec();
         hash.append(&mut hash_1);
         assert_eq!(hash.len(), 64);
 
@@ -620,7 +674,7 @@ test_contract!(
     sudt_swap_ckb_success,
     {
         let mut hash = blake2b!("ckb", *SUDT_TYPE_HASH).to_vec();
-        let mut hash_1 = info_cell_type_hash(0).to_vec();
+        let mut hash_1 = info_cell_type_hash(info_type_args(0)).to_vec();
         hash.append(&mut hash_1);
         assert_eq!(hash.len(), 64);
 

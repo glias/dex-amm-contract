@@ -43,7 +43,7 @@ fn main() -> Result<(), Error> {
 
     // Cancel request
     for (idx, lock_hash) in QueryIter::new(load_cell_lock_hash, Source::Input).enumerate() {
-        if lock_hash == self_args[57..89]
+        if lock_hash == self_args[32..64]
             && load_witness_args(idx, Source::Input)?.total_size() != 0
         {
             return Ok(());

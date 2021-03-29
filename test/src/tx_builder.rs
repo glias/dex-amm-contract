@@ -222,14 +222,6 @@ fn build_tx(
             None => sudt_type_script.clone(),
         };
 
-        let sudt_type_script = match input.custom_type_args.clone() {
-            Some(type_args) => {
-                let type_script = sudt_type_script.clone();
-                type_script.as_builder().args(type_args.pack()).build()
-            }
-            None => sudt_type_script.clone(),
-        };
-
         match input.cell {
             InputCell::Info(cell) => {
                 let lock_args = input.custom_lock_args.expect("info input lock args");
@@ -260,14 +252,27 @@ fn build_tx(
                 witnesses.push(input.witness.unwrap_or_default());
             }
             InputCell::Sudt(cell) => {
-                let input_out_point = context.create_cell(
-                    CellOutput::new_builder()
-                        .capacity(cell.capacity.pack())
-                        .type_(Some(sudt_type_script.clone()).pack())
-                        .lock(user_lock_script)
-                        .build(),
-                    cell.data,
-                );
+                let input_out_point = if let Some(out_point) = cell.out_point {
+                    context.create_cell_with_out_point(
+                        out_point.clone(),
+                        CellOutput::new_builder()
+                            .capacity(cell.capacity.pack())
+                            .type_(Some(sudt_type_script.clone()).pack())
+                            .lock(user_lock_script)
+                            .build(),
+                        cell.data,
+                    );
+                    out_point
+                } else {
+                    context.create_cell(
+                        CellOutput::new_builder()
+                            .capacity(cell.capacity.pack())
+                            .type_(Some(sudt_type_script.clone()).pack())
+                            .lock(user_lock_script)
+                            .build(),
+                        cell.data,
+                    )
+                };
 
                 let input_cell = CellInput::new_builder()
                     .previous_output(input_out_point)
@@ -376,6 +381,11 @@ fn build_tx(
     for (idx, output) in output_results.into_iter().enumerate() {
         let (user_lock_script, hash) = create_user_lock_script(context, idx);
 
+        let info_type_args = match output.custom_type_args.clone() {
+            Some(type_args) => type_args,
+            None => hash.clone(),
+        };
+
         let user_lock_script = match output.custom_lock_args.clone() {
             Some(lock_args) => user_lock_script.as_builder().args(lock_args.pack()).build(),
             None => user_lock_script,
@@ -396,7 +406,7 @@ fn build_tx(
                     .build_script(&info_lock_out_point, args)
                     .expect("info lock script");
                 let info_type_script = context
-                    .build_script(&info_type_out_point, hash)
+                    .build_script(&info_type_out_point, info_type_args)
                     .expect("info type script");
 
                 let output = CellOutput::new_builder()
