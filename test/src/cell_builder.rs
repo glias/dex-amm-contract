@@ -1,5 +1,5 @@
 use ckb_tool::ckb_types::core::Capacity;
-use ckb_tool::ckb_types::packed::Uint128;
+use ckb_tool::ckb_types::packed::{OutPoint, Uint128};
 use ckb_tool::ckb_types::{bytes::Bytes, prelude::*};
 
 use crate::schema::cell::{InfoCellData, LiquidityRequestLockArgs, SwapRequestLockArgs};
@@ -79,11 +79,11 @@ impl SwapRequestCell {
 
 #[derive(Default)]
 pub struct LiquidityRequestLockArgsBuilder {
+    info_type_hash: [u8; 32],
     user_lock_hash: [u8; 32],
     version:        u8,
     sudt_min:       u128,
     ckb_min:        u64,
-    info_type_hash: [u8; 32],
     tips:           u64,
     tips_sudt:      u128,
 }
@@ -126,11 +126,11 @@ impl LiquidityRequestLockArgsBuilder {
 
     pub fn build(self) -> LiquidityRequestLockArgs {
         LiquidityRequestLockArgs::new_builder()
+            .info_type_hash(self.info_type_hash.pack())
             .user_lock_hash(self.user_lock_hash.pack())
             .version(self.version.pack())
             .sudt_min(self.sudt_min.pack())
             .ckb_min(self.ckb_min.pack())
-            .info_type_hash(self.info_type_hash.pack())
             .tips(self.tips.pack())
             .tips_sudt(self.tips_sudt.pack())
             .build()
@@ -139,10 +139,10 @@ impl LiquidityRequestLockArgsBuilder {
 
 #[derive(Default)]
 pub struct SwapRequestLockArgsBuilder {
+    sudt_type_hash: [u8; 32],
     user_lock_hash: [u8; 32],
     version:        u8,
     amount_out_min: u128,
-    sudt_type_hash: [u8; 32],
     tips:           u64,
     tips_sudt:      u128,
 }
@@ -180,10 +180,10 @@ impl SwapRequestLockArgsBuilder {
 
     pub fn build(self) -> SwapRequestLockArgs {
         SwapRequestLockArgs::new_builder()
+            .sudt_type_hash(self.sudt_type_hash.pack())
             .user_lock_hash(self.user_lock_hash.pack())
             .version(self.version.pack())
             .amount_out_min(self.amount_out_min.pack())
-            .sudt_type_hash(self.sudt_type_hash.pack())
             .tips(self.tips.pack())
             .tips_sudt(self.tips_sudt.pack())
             .build()
@@ -241,8 +241,9 @@ impl InfoCellBuilder {
 }
 
 pub struct SudtCell {
-    pub capacity: Capacity,
-    pub data:     Bytes,
+    pub capacity:  Capacity,
+    pub data:      Bytes,
+    pub out_point: Option<OutPoint>,
 }
 
 impl SudtCell {
@@ -250,8 +251,19 @@ impl SudtCell {
         let sudt_data: Uint128 = amount.pack();
 
         SudtCell {
-            capacity: Capacity::shannons(capacity),
-            data:     sudt_data.as_bytes(),
+            capacity:  Capacity::shannons(capacity),
+            data:      sudt_data.as_bytes(),
+            out_point: None,
+        }
+    }
+
+    pub fn new_with_out_point(capacity: u64, amount: u128, out_point: OutPoint) -> Self {
+        let sudt_data: Uint128 = amount.pack();
+
+        SudtCell {
+            capacity:  Capacity::shannons(capacity),
+            data:      sudt_data.as_bytes(),
+            out_point: Some(out_point),
         }
     }
 
@@ -259,6 +271,7 @@ impl SudtCell {
         SudtCell {
             capacity: Capacity::shannons(capacity),
             data,
+            out_point: None,
         }
     }
 }

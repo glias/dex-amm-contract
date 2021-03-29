@@ -9,19 +9,19 @@ struct InfoCellData {
 
 struct LiquidityRequestLockArgs {
     info_type_hash: Byte32,
+    user_lock_hash: Byte32,
     version: Uint8,
     sudt_min: Uint128,
     ckb_min: Uint64,
-    user_lock_hash: Byte32,
     tips: Uint64,
     tips_sudt: Uint128,
 }
 
 struct SwapRequestLockArgs {
     sudt_type_hash: Byte32,
+    user_lock_hash: Byte32,
     version: Uint8,
     amount_out_min: Uint128,
-    user_lock_hash: Byte32,
     tips: Uint64,
     tips_sudt: Uint128,
 }

@@ -4,6 +4,7 @@ use share::blake2b;
 use share::ckb_std::{
     ckb_constants::Source,
     ckb_types::prelude::*,
+    debug,
     high_level::{
         load_cell, load_cell_type_hash, load_script, load_script_hash, load_transaction, QueryIter,
     },
@@ -59,6 +60,7 @@ pub fn verify_type_id() -> Result<(), Error> {
             first_output_index.to_le_bytes()
         );
 
+        debug!("{:?}", script_args);
         if hash[..] != script_args[..] {
             return Err(Error::InvalidTypeID);
         }

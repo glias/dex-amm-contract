@@ -12,7 +12,17 @@ const ERR_OUTPUT_CELLS_LOCK_HASH_DIFF: i8 = 35;
 test_contract!(
     info_creation_success,
     {
-        let input = Inputs::new_sudt(SudtCell::new(21000, 1500));
+        let sudt_data: Uint128 = 1500u128.pack();
+        let input_out_point =
+            sudt_input_out_point(21000, user_lock_args(0), None, sudt_data.as_bytes());
+        let input_out_point_tx_hash: [u8; 32] = input_out_point.tx_hash().unpack();
+
+        let input = Inputs::new_sudt(SudtCell::new_with_out_point(21000, 1500, input_out_point));
+
+        let hash = blake2b!(input_out_point_tx_hash, 0u64.to_le_bytes());
+        let type_id = Bytes::from(hash.to_vec());
+
+        println!("{:?}", hash);
 
         let mut hash = blake2b!("ckb", *SUDT_TYPE_HASH).to_vec();
         let mut hash_1 = info_cell_type_hash(0).to_vec();
@@ -27,7 +37,8 @@ test_contract!(
                 .liquidity_sudt_type_hash(*SUDT_TYPE_HASH)
                 .build(),
         )
-        .custom_lock_args(Bytes::from(hash.clone()));
+        .custom_lock_args(Bytes::from(hash.clone()))
+        .custom_type_args(type_id);
 
         let output_1 =
             Outputs::new_pool(SudtCell::new(21000, 1500)).custom_lock_args(Bytes::from(hash));

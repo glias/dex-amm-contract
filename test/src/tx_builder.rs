@@ -222,14 +222,6 @@ fn build_tx(
             None => sudt_type_script.clone(),
         };
 
-        let sudt_type_script = match input.custom_type_args.clone() {
-            Some(type_args) => {
-                let type_script = sudt_type_script.clone();
-                type_script.as_builder().args(type_args.pack()).build()
-            }
-            None => sudt_type_script.clone(),
-        };
-
         match input.cell {
             InputCell::Info(cell) => {
                 let lock_args = input.custom_lock_args.expect("info input lock args");
@@ -260,14 +252,27 @@ fn build_tx(
                 witnesses.push(input.witness.unwrap_or_default());
             }
             InputCell::Sudt(cell) => {
-                let input_out_point = context.create_cell(
-                    CellOutput::new_builder()
-                        .capacity(cell.capacity.pack())
-                        .type_(Some(sudt_type_script.clone()).pack())
-                        .lock(user_lock_script)
-                        .build(),
-                    cell.data,
-                );
+                let input_out_point = if let Some(out_point) = cell.out_point {
+                    context.create_cell_with_out_point(
+                        out_point.clone(),
+                        CellOutput::new_builder()
+                            .capacity(cell.capacity.pack())
+                            .type_(Some(sudt_type_script.clone()).pack())
+                            .lock(user_lock_script)
+                            .build(),
+                        cell.data,
+                    );
+                    out_point
+                } else {
+                    context.create_cell(
+                        CellOutput::new_builder()
+                            .capacity(cell.capacity.pack())
+                            .type_(Some(sudt_type_script.clone()).pack())
+                            .lock(user_lock_script)
+                            .build(),
+                        cell.data,
+                    )
+                };
 
                 let input_cell = CellInput::new_builder()
                     .previous_output(input_out_point)

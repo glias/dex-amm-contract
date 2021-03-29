@@ -95,6 +95,32 @@ fn info_type_args(idx: usize) -> Bytes {
         .as_bytes()
 }
 
+fn sudt_input_out_point(
+    capacity: u64,
+    lock_args: Bytes,
+    type_args: Option<Bytes>,
+    data: Bytes,
+) -> OutPoint {
+    let mut ctx = Context::default();
+    let always_success_out_point = ctx.deploy_cell(ALWAYS_SUCCESS.clone());
+    let lock_script = ctx
+        .build_script(&always_success_out_point, lock_args)
+        .unwrap();
+
+    let type_script = ctx
+        .build_script(&always_success_out_point, type_args.unwrap_or_default())
+        .unwrap();
+
+    ctx.create_cell(
+        CellOutput::new_builder()
+            .capacity(capacity.pack())
+            .type_(Some(type_script).pack())
+            .lock(lock_script)
+            .build(),
+        data,
+    )
+}
+
 fn liquidity_sudt_type_args() -> Bytes {
     Bytes::from(9999usize.to_le_bytes().to_vec())
 }
