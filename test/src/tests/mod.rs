@@ -64,8 +64,7 @@ macro_rules! test_contract {
     };
 }
 
-fn info_cell_type_hash(idx: usize) -> [u8; 32] {
-    let args = info_type_args(idx);
+fn info_cell_type_hash(args: Bytes) -> [u8; 32] {
     Script::new_builder()
         .code_hash(CellOutput::calc_data_hash(&INFO_TYPE_SCRIPT))
         .hash_type(Byte::new(0))

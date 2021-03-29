@@ -381,6 +381,11 @@ fn build_tx(
     for (idx, output) in output_results.into_iter().enumerate() {
         let (user_lock_script, hash) = create_user_lock_script(context, idx);
 
+        let info_type_args = match output.custom_type_args.clone() {
+            Some(type_args) => type_args,
+            None => hash.clone(),
+        };
+
         let user_lock_script = match output.custom_lock_args.clone() {
             Some(lock_args) => user_lock_script.as_builder().args(lock_args.pack()).build(),
             None => user_lock_script,
@@ -401,7 +406,7 @@ fn build_tx(
                     .build_script(&info_lock_out_point, args)
                     .expect("info lock script");
                 let info_type_script = context
-                    .build_script(&info_type_out_point, hash)
+                    .build_script(&info_type_out_point, info_type_args)
                     .expect("info type script");
 
                 let output = CellOutput::new_builder()
