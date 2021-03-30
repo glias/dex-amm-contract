@@ -16,10 +16,11 @@ use share::ckb_std::{
     },
     default_alloc,
     high_level::{
-        load_cell, load_cell_data, load_cell_lock_hash, load_script, load_witness_args, QueryIter,
+        load_cell, load_cell_data, load_cell_lock_hash, load_cell_type_hash, load_script,
+        load_witness_args, QueryIter,
     },
 };
-use share::{blake2b, decode_u64, get_cell_type_hash};
+use share::{blake2b, decode_u64, get_cell_type_hash, hash::blake2b_256};
 
 use crate::error::Error;
 
@@ -169,14 +170,14 @@ fn verify_info_creation(info_out_cell: &CellOutput) -> Result<(), Error> {
 
     let info_out_lock_args: Vec<u8> = info_out_cell.lock().args().unpack();
     let pool_type_hash = get_cell_type_hash!(1, Source::Output);
-    let output_info_lock_count = QueryIter::new(load_cell, Source::Output)
-        .filter(|cell| {
-            cell.lock().code_hash().unpack().as_ref() == hex::decode(INFO_LOCK_CODE_HASH).unwrap()
-        })
-        .count();
+    let (output_info_lock_count, is_data_deploy) = get_info_cell_count()?;
 
     if output_info_lock_count != 2 {
-        return Err(Error::InfoCreationOutputCellCountMismatch);
+        if is_data_deploy {
+            return Err(Error::InvalidInfoLockCountInOutput);
+        } else {
+            return Err(Error::InvalidInfoLockCountInCellDeps);
+        }
     }
 
     if info_out_cell.lock().hash_type() != HashType::Data.into() {
@@ -202,10 +203,52 @@ fn verify_info_creation(info_out_cell: &CellOutput) -> Result<(), Error> {
     Ok(())
 }
 
+fn get_info_cell_count() -> Result<(usize, bool), Error> {
+    let info_lock_data_hash = hex::decode(INFO_LOCK_CODE_HASH).unwrap();
+
+    let ret = if load_cell(0, Source::Output)?.lock().hash_type() == HashType::Code.as_byte() {
+        let is_data_deploy = false;
+        (type_deploy(&info_lock_data_hash)?, is_data_deploy)
+    } else {
+        let count = QueryIter::new(load_cell, Source::Output)
+            .filter(|cell| cell.lock().code_hash().unpack() == info_lock_data_hash.as_ref())
+            .count();
+        (count, true)
+    };
+
+    Ok(ret)
+}
+
+fn type_deploy(info_lock_data_hash: &[u8]) -> Result<usize, Error> {
+    let mut ret = 0;
+    let info_lock_code_hash = load_cell(0, Source::Output)?.lock().code_hash().unpack();
+
+    for (idx, res) in QueryIter::new(load_cell_type_hash, Source::CellDep).enumerate() {
+        if let Some(hash) = res {
+            if hash == info_lock_code_hash
+                && blake2b_256(load_cell_data(idx, Source::CellDep)?) == info_lock_data_hash
+            {
+                ret += 1;
+            }
+        }
+    }
+
+    Ok(ret)
+}
+
 #[allow(dead_code)]
 enum HashType {
     Data,
     Code,
+}
+
+impl HashType {
+    fn as_byte(&self) -> Byte {
+        match self {
+            HashType::Data => Byte::new(0u8),
+            HashType::Code => Byte::new(1u8),
+        }
+    }
 }
 
 impl Into<Byte> for HashType {
