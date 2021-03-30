@@ -8,7 +8,7 @@ simulators:
 	cp target/$(ENVIRONMENT)/asset-order-lockscript-sim build/$(ENVIRONMENT)/asset-order-lockscript-sim
 
 schema:
-	make -C test schema
+	make -C tests schema
 
 fmt:
 	cargo fmt --all -- --check
