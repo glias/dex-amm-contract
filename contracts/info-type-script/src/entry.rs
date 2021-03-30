@@ -216,7 +216,7 @@ fn get_info_cell_count() -> Result<(usize, bool), Error> {
 }
 
 fn type_deploy(info_lock_data_hash: &[u8]) -> Result<usize, Error> {
-    let mut ret = 0;
+    let mut flag = false;
     let info_lock_code_hash = load_cell(0, Source::Output)?.lock().code_hash().unpack();
 
     for (idx, res) in QueryIter::new(load_cell_type_hash, Source::CellDep).enumerate() {
@@ -224,12 +224,20 @@ fn type_deploy(info_lock_data_hash: &[u8]) -> Result<usize, Error> {
             if hash == info_lock_code_hash
                 && blake2b_256(load_cell_data(idx, Source::CellDep)?) == info_lock_data_hash
             {
-                ret += 1;
+                flag = true;
+                break;
             }
         }
     }
 
-    Ok(ret)
+    if flag {
+        let ret = QueryIter::new(load_cell, Source::Output)
+            .filter(|cell| cell.lock().code_hash().unpack() == info_lock_code_hash)
+            .count();
+        Ok(ret)
+    } else {
+        Err(Error::NoInfoLockInCellDeps)
+    }
 }
 
 #[allow(dead_code)]
