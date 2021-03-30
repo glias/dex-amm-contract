@@ -2,7 +2,7 @@ use super::*;
 
 const ERR_OUTPUT_INFO_LOCK_ARGS_FIRST_HALF_DIFF: i8 = 30;
 const ERR_OUTPUT_INFO_LOCK_ARGS_SECOND_HALF_DIFF: i8 = 31;
-const ERR_OUTPUT_CELL_WITH_INFO_LOCK_HASH_MORE_THAN_TWO: i8 = 32;
+const ERR_INVALID_INFO_LOCK_COUNT_IN_OUTPUT: i8 = 33;
 const ERR_OUTPUT_POOL_CELL_DATA_LEN_TOO_SHORT: i8 = 34;
 const ERR_OUTPUT_CELLS_LOCK_HASH_DIFF: i8 = 35;
 
@@ -60,7 +60,7 @@ test_contract!(
 );
 
 test_contract!(
-    info_creation_output_three_cell_with_info_lock_hash,
+    info_creation_data_deploy_output_three_cell_with_info_lock_hash,
     {
         let sudt_data: Uint128 = 1500u128.pack();
         let input_out_point =
@@ -101,7 +101,7 @@ test_contract!(
         assert_error_eq!(
             err,
             tx_error(
-                ERR_OUTPUT_CELL_WITH_INFO_LOCK_HASH_MORE_THAN_TWO,
+                ERR_INVALID_INFO_LOCK_COUNT_IN_OUTPUT,
                 0,
                 false,
                 false
