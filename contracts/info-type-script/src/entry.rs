@@ -180,10 +180,6 @@ fn verify_info_creation(info_out_cell: &CellOutput) -> Result<(), Error> {
         }
     }
 
-    if info_out_cell.lock().hash_type() != HashType::Data.into() {
-        return Err(Error::InfoCellHashTypeMismatch);
-    }
-
     if info_out_lock_args[0..32] != blake2b!("ckb", pool_type_hash) {
         return Err(Error::InfoLockArgsFrontHalfMismatch);
     }
@@ -244,15 +240,6 @@ enum HashType {
 
 impl HashType {
     fn as_byte(&self) -> Byte {
-        match self {
-            HashType::Data => Byte::new(0u8),
-            HashType::Code => Byte::new(1u8),
-        }
-    }
-}
-
-impl Into<Byte> for HashType {
-    fn into(self) -> Byte {
         match self {
             HashType::Data => Byte::new(0u8),
             HashType::Code => Byte::new(1u8),
