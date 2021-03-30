@@ -36,8 +36,8 @@ pub enum Error {
     LiquidityPoolTokenDiff,
     InfoLockArgsFrontHalfMismatch = 30,
     InfoLockArgsSecondHalfMismatch,
-    InfoCreationOutputCellCountMismatch,
-    InfoCellHashTypeMismatch,
+    InvalidInfoLockCountInCellDeps,
+    InvalidInfoLockCountInOutput,
     CellDataLenTooShort,
     InfoCreationCellLockHashMismatch = 35,
     LiquidityArgsInfoTypeHashMismatch,
@@ -59,7 +59,7 @@ pub enum Error {
     RequestCapcityEqSUDTCapcity,
     InvalidOutputTypeHash,
     InvalidSwapOutputCapacity,
-    InvalidPoolOutputData,
+    InvalidPoolOutputData = 55,
 }
 
 impl From<SysError> for Error {
