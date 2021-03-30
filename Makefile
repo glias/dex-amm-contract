@@ -20,9 +20,9 @@ deps:
 	cd deps/ckb-dyn-lock && make all-via-docker
 
 test: 
-	schema
+	make -C tests schema
 	# simulators
-	cargo test -p test
+	cargo test -p tests
 	# scripts/run_sim_tests.sh $(ENVIRONMENT)
 
 ci: fmt build test

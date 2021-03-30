@@ -9,7 +9,7 @@ pub mod cell_builder;
 #[allow(dead_code)]
 mod schema;
 #[cfg(test)]
-mod tests;
+mod script_test;
 #[allow(dead_code)]
 pub mod tx_builder;
 

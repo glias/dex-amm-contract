@@ -6,7 +6,7 @@ members = [
     "contracts/info-type-script",
     "dynamic-loading",
     "share",
-    "test",
+    "tests",
     "natives"
 ]
 
