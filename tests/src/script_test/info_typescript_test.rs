@@ -100,12 +100,7 @@ test_contract!(
         let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
         assert_error_eq!(
             err,
-            tx_error(
-                ERR_INVALID_INFO_LOCK_COUNT_IN_OUTPUT,
-                0,
-                false,
-                false
-            )
+            tx_error(ERR_INVALID_INFO_LOCK_COUNT_IN_OUTPUT, 0, false, false)
         );
 
         (context, tx)

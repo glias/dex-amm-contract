@@ -60,6 +60,7 @@ pub enum Error {
     InvalidOutputTypeHash,
     InvalidSwapOutputCapacity,
     InvalidPoolOutputData = 55,
+    NoInfoLockInCellDeps,
 }
 
 impl From<SysError> for Error {
