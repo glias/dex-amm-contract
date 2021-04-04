@@ -14,7 +14,7 @@ use share::ckb_std::{
 };
 use share::{cell::LiquidityRequestLockArgs, decode_u128, get_cell_type_hash};
 
-use crate::entry::{INFO_INDEX, INFO_VERSION, ONE, POOL_INDEX, SUDT_CAPACITY};
+use crate::entry::{INFO_INDEX, INFO_VERSION, ONE, POOL_INDEX, SUDT_CAPACITY, SUDT_CELL_DATA_LEN};
 use crate::error::Error;
 
 pub fn liquidity_tx_verification(
@@ -181,7 +181,7 @@ fn mint_liquidity(
         {
             return Err(Error::SUDTInjectAmountDiff);
         }
-    } else if change_data.len() >= 16 {
+    } else if change_data.len() >= SUDT_CELL_DATA_LEN {
         if get_cell_type_hash!(liquidity_index + 1, Source::Output)
             != get_cell_type_hash!(1, Source::Input)
         {
@@ -244,7 +244,7 @@ fn burn_liquidity(
     let raw_lock_args: Vec<u8> = liquidity_order_cell.lock().args().unpack();
     let liquidity_lock_args = LiquidityRequestLockArgs::from_raw(&raw_lock_args)?;
 
-    if sudt_data.len() < 16 {
+    if sudt_data.len() < SUDT_CELL_DATA_LEN {
         return Err(Error::SUDTCellDataLenTooShort);
     }
 

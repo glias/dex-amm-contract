@@ -34,6 +34,7 @@ const INFO_CAPACITY: u64 = 25_000_000_000;
 const INFO_VERSION: u8 = 1;
 const INFO_INDEX: usize = 0;
 const POOL_INDEX: usize = 1;
+const SUDT_CELL_DATA_LEN: usize = 16;
 
 pub static INFO_LOCK_CODE_HASH: &str =
     include!(concat!(env!("OUT_DIR"), "/info_lock_code_hash.rs"));
@@ -196,7 +197,7 @@ fn verify_info_creation(info_out_cell: &CellOutput) -> Result<(), Error> {
         return Err(Error::InfoCreationCellLockHashMismatch);
     }
 
-    if load_cell_data(POOL_INDEX, Source::Output)?.len() < 16 {
+    if load_cell_data(POOL_INDEX, Source::Output)?.len() < SUDT_CELL_DATA_LEN {
         return Err(Error::CellDataLenTooShort);
     }
 
