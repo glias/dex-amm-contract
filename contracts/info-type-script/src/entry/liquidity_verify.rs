@@ -15,7 +15,7 @@ use share::ckb_std::{
 };
 use share::{decode_u128, get_cell_type_hash};
 
-use crate::entry::{INFO_VERSION, ONE, SUDT_CAPACITY};
+use crate::entry::{INFO_VERSION, ONE, POOL_INDEX, SUDT_CAPACITY};
 use crate::error::Error;
 
 pub fn liquidity_tx_verification(
@@ -25,7 +25,8 @@ pub fn liquidity_tx_verification(
     total_liquidity: &mut u128,
     liquidity_sudt_type_hash: [u8; 32],
 ) -> Result<(), Error> {
-    let pool_type_hash = get_cell_type_hash!(1, Source::Input);
+    let info_in_type_hash = get_cell_type_hash!(INFO_INDEX, Source::Input);
+    let pool_type_hash = get_cell_type_hash!(POOL_INDEX, Source::Input);
     let input_cell_count = QueryIter::new(load_cell, Source::Input).count();
 
     for idx in (3 + swap_cell_count)..input_cell_count {
@@ -40,7 +41,7 @@ pub fn liquidity_tx_verification(
 
         let liquidity_order_data = SUDTAmountData::from_raw(&raw_data)?;
         let liquidity_type_hash = get_cell_type_hash!(idx, Source::Input);
-        if liquidity_order_lock_args.info_type_hash != get_cell_type_hash!(0, Source::Input) {
+        if liquidity_order_lock_args.info_type_hash != info_in_type_hash {
             return Err(Error::LiquidityArgsInfoTypeHashMismatch);
         }
 
@@ -83,17 +84,21 @@ pub fn verify_initial_mint(
         return Err(Error::InvalidInfoInData);
     }
 
-    let order_cell = load_cell(3, Source::Input)?;
+    let order_cell_index: usize = 3;
+    let order_cell = load_cell(order_cell_index, Source::Input)?;
     let raw_lock_args: Vec<u8> = order_cell.lock().args().unpack();
     let order_lock_args = LiquidityRequestLockArgs::from_raw(&raw_lock_args)?;
-    let order_data = SUDTAmountData::from_raw(&load_cell_data(3, Source::Input)?)?;
-    let liquidity_sudt_data = SUDTAmountData::from_raw(&load_cell_data(3, Source::Output)?)?;
+    let order_data = SUDTAmountData::from_raw(&load_cell_data(order_cell_index, Source::Input)?)?;
+    let liquidity_sudt_data =
+        SUDTAmountData::from_raw(&load_cell_data(order_cell_index, Source::Output)?)?;
 
-    if get_cell_type_hash!(3, Source::Output) != liquidity_sudt_type_hash {
+    if get_cell_type_hash!(order_cell_index, Source::Output) != liquidity_sudt_type_hash {
         return Err(Error::LiquiditySUDTTypeHashMismatch);
     }
 
-    if load_cell_lock_hash(3, Source::Output)?.as_ref() != order_lock_args.user_lock_hash.as_ref() {
+    if load_cell_lock_hash(order_cell_index, Source::Output)?.as_ref()
+        != order_lock_args.user_lock_hash.as_ref()
+    {
         return Err(Error::LiquidityArgsUserLockHashMismatch);
     }
 

@@ -31,6 +31,8 @@ const POOL_CAPACITY: u128 = 18_600_000_000;
 const SUDT_CAPACITY: u64 = 14_200_000_000;
 const INFO_CAPACITY: u64 = 25_000_000_000;
 const INFO_VERSION: u8 = 1;
+const INFO_INDEX: usize = 0;
+const POOL_INDEX: usize = 1;
 
 pub static INFO_LOCK_CODE_HASH: &str =
     include!(concat!(env!("OUT_DIR"), "/info_lock_code_hash.rs"));
@@ -43,7 +45,7 @@ pub fn main() -> Result<(), Error> {
     let (input_info_cell_count, output_info_cell_count) = get_info_count(info_type_code_hash);
 
     if input_info_cell_count == 0 && output_info_cell_count == 1 {
-        verify_info_creation(&load_cell(0, Source::Output)?)?;
+        verify_info_creation(&load_cell(INFO_INDEX, Source::Output)?)?;
         return Ok(());
     }
 
@@ -51,13 +53,13 @@ pub fn main() -> Result<(), Error> {
         return Err(Error::MoreThanOneLiquidityPool);
     }
 
-    let info_in_data = InfoCellData::from_raw(&load_cell_data(0, Source::Input)?)?;
-    let pool_in_cell = load_cell(1, Source::Input)?;
-    let pool_in_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Input)?)?;
-    let info_out_cell = load_cell(0, Source::Output)?;
-    let info_out_data = InfoCellData::from_raw(&load_cell_data(0, Source::Output)?)?;
-    let pool_out_cell = load_cell(1, Source::Output)?;
-    let pool_out_data = SUDTAmountData::from_raw(&load_cell_data(1, Source::Output)?)?;
+    let info_in_data = InfoCellData::from_raw(&load_cell_data(INFO_INDEX, Source::Input)?)?;
+    let pool_in_cell = load_cell(POOL_INDEX, Source::Input)?;
+    let pool_in_data = SUDTAmountData::from_raw(&load_cell_data(POOL_INDEX, Source::Input)?)?;
+    let info_out_cell = load_cell(INFO_INDEX, Source::Output)?;
+    let info_out_data = InfoCellData::from_raw(&load_cell_data(INFO_INDEX, Source::Output)?)?;
+    let pool_out_cell = load_cell(POOL_INDEX, Source::Output)?;
+    let pool_out_data = SUDTAmountData::from_raw(&load_cell_data(POOL_INDEX, Source::Output)?)?;
 
     let mut ckb_reserve = info_in_data.ckb_reserve;
     let mut sudt_reserve = info_in_data.sudt_reserve;
@@ -169,7 +171,7 @@ fn verify_info_creation(info_out_cell: &CellOutput) -> Result<(), Error> {
     type_id::verify_type_id()?;
 
     let info_out_lock_args: Vec<u8> = info_out_cell.lock().args().unpack();
-    let pool_type_hash = get_cell_type_hash!(1, Source::Output);
+    let pool_type_hash = get_cell_type_hash!(POOL_INDEX, Source::Output);
     let (output_info_lock_count, is_data_deploy) = get_info_cell_count()?;
 
     if output_info_lock_count != 2 {
@@ -184,15 +186,17 @@ fn verify_info_creation(info_out_cell: &CellOutput) -> Result<(), Error> {
         return Err(Error::InfoLockArgsFrontHalfMismatch);
     }
 
-    if info_out_lock_args[32..64] != get_cell_type_hash!(0, Source::Output) {
+    if info_out_lock_args[32..64] != get_cell_type_hash!(INFO_INDEX, Source::Output) {
         return Err(Error::InfoLockArgsSecondHalfMismatch);
     }
 
-    if load_cell_lock_hash(0, Source::Output)? != load_cell_lock_hash(1, Source::Output)? {
+    if load_cell_lock_hash(INFO_INDEX, Source::Output)?
+        != load_cell_lock_hash(POOL_INDEX, Source::Output)?
+    {
         return Err(Error::InfoCreationCellLockHashMismatch);
     }
 
-    if load_cell_data(1, Source::Output)?.len() < 16 {
+    if load_cell_data(POOL_INDEX, Source::Output)?.len() < 16 {
         return Err(Error::CellDataLenTooShort);
     }
 
@@ -202,22 +206,26 @@ fn verify_info_creation(info_out_cell: &CellOutput) -> Result<(), Error> {
 fn get_info_cell_count() -> Result<(usize, bool), Error> {
     let info_lock_data_hash = hex::decode(INFO_LOCK_CODE_HASH).unwrap();
 
-    let ret = if load_cell(0, Source::Output)?.lock().hash_type() == HashType::Code.as_byte() {
-        let is_data_deploy = false;
-        (type_deploy(&info_lock_data_hash)?, is_data_deploy)
-    } else {
-        let count = QueryIter::new(load_cell, Source::Output)
-            .filter(|cell| cell.lock().code_hash().unpack() == info_lock_data_hash.as_ref())
-            .count();
-        (count, true)
-    };
+    let ret =
+        if load_cell(INFO_INDEX, Source::Output)?.lock().hash_type() == HashType::Code.as_byte() {
+            let is_data_deploy = false;
+            (type_deploy(&info_lock_data_hash)?, is_data_deploy)
+        } else {
+            let count = QueryIter::new(load_cell, Source::Output)
+                .filter(|cell| cell.lock().code_hash().unpack() == info_lock_data_hash.as_ref())
+                .count();
+            (count, true)
+        };
 
     Ok(ret)
 }
 
 fn type_deploy(info_lock_data_hash: &[u8]) -> Result<usize, Error> {
     let mut flag = false;
-    let info_lock_code_hash = load_cell(0, Source::Output)?.lock().code_hash().unpack();
+    let info_lock_code_hash = load_cell(INFO_INDEX, Source::Output)?
+        .lock()
+        .code_hash()
+        .unpack();
 
     for (idx, res) in QueryIter::new(load_cell_type_hash, Source::CellDep).enumerate() {
         if let Some(hash) = res {
