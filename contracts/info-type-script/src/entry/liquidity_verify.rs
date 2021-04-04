@@ -7,15 +7,14 @@ use num_traits::identities::Zero;
 
 // Import CKB syscalls and structures
 // https://nervosnetwork.github.io/ckb-std/riscv64imac-unknown-none-elf/doc/ckb_std/index.html
-use share::cell::{LiquidityRequestLockArgs, SUDTAmountData};
 use share::ckb_std::{
     ckb_constants::Source,
     ckb_types::{packed::CellOutput, prelude::*},
     high_level::{load_cell, load_cell_data, load_cell_lock_hash, QueryIter},
 };
-use share::{decode_u128, get_cell_type_hash};
+use share::{cell::LiquidityRequestLockArgs, decode_u128, get_cell_type_hash};
 
-use crate::entry::{INFO_VERSION, ONE, SUDT_CAPACITY};
+use crate::entry::{INFO_INDEX, INFO_VERSION, ONE, POOL_INDEX, SUDT_CAPACITY, SUDT_CELL_DATA_LEN};
 use crate::error::Error;
 
 pub fn liquidity_tx_verification(
@@ -25,12 +24,12 @@ pub fn liquidity_tx_verification(
     total_liquidity: &mut u128,
     liquidity_sudt_type_hash: [u8; 32],
 ) -> Result<(), Error> {
-    let pool_type_hash = get_cell_type_hash!(1, Source::Input);
+    let info_in_type_hash = get_cell_type_hash!(INFO_INDEX, Source::Input);
+    let pool_type_hash = get_cell_type_hash!(POOL_INDEX, Source::Input);
     let input_cell_count = QueryIter::new(load_cell, Source::Input).count();
 
     for idx in (3 + swap_cell_count)..input_cell_count {
         let liquidity_order_cell = load_cell(idx, Source::Input)?;
-        let raw_data = load_cell_data(idx, Source::Input)?;
         let raw_lock_args: Vec<u8> = liquidity_order_cell.lock().args().unpack();
         let liquidity_order_lock_args = LiquidityRequestLockArgs::from_raw(&raw_lock_args)?;
 
@@ -38,9 +37,9 @@ pub fn liquidity_tx_verification(
             return Err(Error::VersionDiff);
         }
 
-        let liquidity_order_data = SUDTAmountData::from_raw(&raw_data)?;
+        let liquidity_order_data = decode_u128(&load_cell_data(idx, Source::Input)?)?;
         let liquidity_type_hash = get_cell_type_hash!(idx, Source::Input);
-        if liquidity_order_lock_args.info_type_hash != get_cell_type_hash!(0, Source::Input) {
+        if liquidity_order_lock_args.info_type_hash != info_in_type_hash {
             return Err(Error::LiquidityArgsInfoTypeHashMismatch);
         }
 
@@ -49,7 +48,7 @@ pub fn liquidity_tx_verification(
                 idx,
                 swap_cell_count + 3,
                 &liquidity_order_cell,
-                liquidity_order_data.sudt_amount,
+                liquidity_order_data,
                 ckb_reserve,
                 sudt_reserve,
                 total_liquidity,
@@ -60,7 +59,7 @@ pub fn liquidity_tx_verification(
                 swap_cell_count + 3,
                 liquidity_sudt_type_hash,
                 &liquidity_order_cell,
-                liquidity_order_data.sudt_amount,
+                liquidity_order_data,
                 ckb_reserve,
                 sudt_reserve,
                 total_liquidity,
@@ -83,23 +82,26 @@ pub fn verify_initial_mint(
         return Err(Error::InvalidInfoInData);
     }
 
-    let order_cell = load_cell(3, Source::Input)?;
+    let order_cell_index: usize = 3;
+    let order_cell = load_cell(order_cell_index, Source::Input)?;
     let raw_lock_args: Vec<u8> = order_cell.lock().args().unpack();
     let order_lock_args = LiquidityRequestLockArgs::from_raw(&raw_lock_args)?;
-    let order_data = SUDTAmountData::from_raw(&load_cell_data(3, Source::Input)?)?;
-    let liquidity_sudt_data = SUDTAmountData::from_raw(&load_cell_data(3, Source::Output)?)?;
+    let order_data = decode_u128(&load_cell_data(order_cell_index, Source::Input)?)?;
+    let liquidity_sudt_data = decode_u128(&load_cell_data(order_cell_index, Source::Output)?)?;
 
-    if get_cell_type_hash!(3, Source::Output) != liquidity_sudt_type_hash {
+    if get_cell_type_hash!(order_cell_index, Source::Output) != liquidity_sudt_type_hash {
         return Err(Error::LiquiditySUDTTypeHashMismatch);
     }
 
-    if load_cell_lock_hash(3, Source::Output)?.as_ref() != order_lock_args.user_lock_hash.as_ref() {
+    if load_cell_lock_hash(order_cell_index, Source::Output)?.as_ref()
+        != order_lock_args.user_lock_hash.as_ref()
+    {
         return Err(Error::LiquidityArgsUserLockHashMismatch);
     }
 
-    let sudt_injected = order_data.sudt_amount;
+    let sudt_injected = order_data;
     let ckb_injected = order_cell.capacity().unpack() - SUDT_CAPACITY;
-    let user_liquidity = liquidity_sudt_data.sudt_amount;
+    let user_liquidity = liquidity_sudt_data;
     let mint_liquidity = (BigUint::from(sudt_injected) * ckb_injected).sqrt();
 
     if BigUint::from(user_liquidity) != mint_liquidity {
@@ -145,12 +147,11 @@ fn mint_liquidity(
         return Err(Error::LiquidityArgsUserLockHashMismatch);
     }
 
-    let user_liquidity =
-        SUDTAmountData::from_raw(&load_cell_data(liquidity_index, Source::Output)?)?.sudt_amount;
+    let user_liquidity = decode_u128(&load_cell_data(liquidity_index, Source::Output)?)?;
+    let change_data = load_cell_data(liquidity_index + 1, Source::Output)?;
 
     let ckb_injected: u128;
     let sudt_injected: u128;
-    let change_data = load_cell_data(liquidity_index + 1, Source::Output)?;
 
     if change_data.is_empty() {
         if change_cell.type_().is_some()
@@ -180,7 +181,7 @@ fn mint_liquidity(
         {
             return Err(Error::SUDTInjectAmountDiff);
         }
-    } else if change_data.len() >= 16 {
+    } else if change_data.len() >= SUDT_CELL_DATA_LEN {
         if get_cell_type_hash!(liquidity_index + 1, Source::Output)
             != get_cell_type_hash!(1, Source::Input)
         {
@@ -243,7 +244,7 @@ fn burn_liquidity(
     let raw_lock_args: Vec<u8> = liquidity_order_cell.lock().args().unpack();
     let liquidity_lock_args = LiquidityRequestLockArgs::from_raw(&raw_lock_args)?;
 
-    if sudt_data.len() < 16 {
+    if sudt_data.len() < SUDT_CELL_DATA_LEN {
         return Err(Error::SUDTCellDataLenTooShort);
     }
 
