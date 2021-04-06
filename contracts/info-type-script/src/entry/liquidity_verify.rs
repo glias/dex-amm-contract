@@ -27,8 +27,9 @@ pub fn liquidity_tx_verification(
     let info_in_type_hash = get_cell_type_hash!(INFO_INDEX, Source::Input);
     let pool_type_hash = get_cell_type_hash!(POOL_INDEX, Source::Input);
     let input_cell_count = QueryIter::new(load_cell, Source::Input).count();
+    let base_index = swap_cell_count + 3;
 
-    for idx in (3 + swap_cell_count)..input_cell_count {
+    for idx in base_index..input_cell_count {
         let liquidity_order_cell = load_cell(idx, Source::Input)?;
         let raw_lock_args: Vec<u8> = liquidity_order_cell.lock().args().unpack();
         let liquidity_order_lock_args = LiquidityRequestLockArgs::from_raw(&raw_lock_args)?;
@@ -46,7 +47,7 @@ pub fn liquidity_tx_verification(
         if liquidity_type_hash == liquidity_sudt_type_hash {
             burn_liquidity(
                 idx,
-                swap_cell_count + 3,
+                base_index,
                 &liquidity_order_cell,
                 liquidity_order_data,
                 ckb_reserve,
@@ -56,7 +57,8 @@ pub fn liquidity_tx_verification(
         } else if liquidity_type_hash == pool_type_hash {
             mint_liquidity(
                 idx,
-                swap_cell_count + 3,
+                base_index,
+                pool_type_hash,
                 liquidity_sudt_type_hash,
                 &liquidity_order_cell,
                 liquidity_order_data,
@@ -118,6 +120,7 @@ pub fn verify_initial_mint(
 fn mint_liquidity(
     liquidity_cell_index: usize,
     base_index: usize,
+    pool_type_hash: [u8; 32],
     liquidity_sudt_type_hash: [u8; 32],
     liquidity_order_cell: &CellOutput,
     liquidity_order_data: u128,
@@ -182,9 +185,7 @@ fn mint_liquidity(
             return Err(Error::SUDTInjectAmountDiff);
         }
     } else if change_data.len() >= SUDT_CELL_DATA_LEN {
-        if get_cell_type_hash!(liquidity_index + 1, Source::Output)
-            != get_cell_type_hash!(1, Source::Input)
-        {
+        if get_cell_type_hash!(liquidity_index + 1, Source::Output) != pool_type_hash {
             return Err(Error::SUDTTypeHashMismatch);
         }
 
@@ -240,7 +241,7 @@ fn burn_liquidity(
 
     let sudt_out = load_cell(sudt_index, Source::Output)?;
     let ckb_out = load_cell(sudt_index + 1, Source::Output)?;
-    let sudt_data = load_cell_data(index, Source::Output)?;
+    let sudt_data = load_cell_data(sudt_index, Source::Output)?;
     let raw_lock_args: Vec<u8> = liquidity_order_cell.lock().args().unpack();
     let liquidity_lock_args = LiquidityRequestLockArgs::from_raw(&raw_lock_args)?;
 
