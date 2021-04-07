@@ -40,7 +40,7 @@ any_token_cell    ------->
 info_in_cell                            info_out_cell
 pool_in_cell                            pool_out_cell
                           ------->
-matcher_in_cell                    matcher_out_cell 
+matcher_in_cell                         matcher_out_cell 
 add_liquidity_cell                      liquidity_sudt_cell
 ```
 
@@ -49,9 +49,8 @@ add_liquidity_cell                      liquidity_sudt_cell
 ```
 info_in_cell                            info_out_cell
 pool_in_cell                            pool_out_cell
-                          ------->
 matcher_in_cell                         matcher_out_cell 
-
+                          ------->
 [swap_request_cell]                     [sudt_cell or ckb_cell]
 
 [removed_liquidity_cell]                [sudt_cell
