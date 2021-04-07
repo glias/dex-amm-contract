@@ -7,8 +7,7 @@ The Glias DEX AMM contract with ckb and SUDT pair.
 * [capsule](https://github.com/nervosnetwork/capsule) >= 0.4.4
 * [ckb-cli](https://github.com/nervosnetwork/ckb-cli) >= 0.39.0
 
-> Note: Capsule uses docker to build contracts and run tests. https://docs.docker.com/get-docker/
-> and docker and ckb-cli must be accessible in the PATH in order for them to be used by Capsule.
+> Note: Capsule uses [docker](https://docs.docker.com/get-docker/) to build contracts and run tests. Besides, docker and ckb-cli must be accessible in the PATH in order for them to be used by Capsule.
 
 ## Getting Start
 
@@ -41,7 +40,7 @@ any_token_cell    ------->
 info_in_cell                            info_out_cell
 pool_in_cell                            pool_out_cell
                           ------->
-matcher_in_cell(ckb)                    matcher_out_cell(ckb) 
+matcher_in_cell                    matcher_out_cell 
 add_liquidity_cell                      liquidity_sudt_cell
 ```
 
@@ -51,10 +50,12 @@ add_liquidity_cell                      liquidity_sudt_cell
 info_in_cell                            info_out_cell
 pool_in_cell                            pool_out_cell
                           ------->
-matcher_in_cell(ckb)                    matcher_out_cell(ckb) 
+matcher_in_cell                    matcher_out_cell 
 [swap_request_cell]                     [sudt_cell or ckb_cell]
+
 [removed_liquidity_cell]                [sudt_cell
                                         + ckb_cell]
+                                        
 [add_liquidity_cell]                    [liquidity_cell
                                         + (sudt_cell or ckb_cell)]
 ```
