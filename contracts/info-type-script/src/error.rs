@@ -61,6 +61,8 @@ pub enum Error {
     InvalidSwapOutputCapacity,
     InvalidPoolOutputData = 55,
     NoInfoLockInCellDeps,
+    MintLiquidityEqZero,
+    InjectAmountEqZero,
 }
 
 impl From<SysError> for Error {

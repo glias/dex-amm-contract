@@ -106,6 +106,10 @@ pub fn verify_initial_mint(
     let user_liquidity = liquidity_sudt_data;
     let mint_liquidity = (BigUint::from(sudt_injected) * ckb_injected).sqrt();
 
+    if user_liquidity == 0 {
+        return Err(Error::MintLiquidityEqZero);
+    }
+
     if BigUint::from(user_liquidity) != mint_liquidity {
         return Err(Error::MintInitialLiquidityFailed);
     }
@@ -168,6 +172,10 @@ fn mint_liquidity(
             - SUDT_CAPACITY as u128
             - change_cell.capacity().unpack() as u128;
 
+        if ckb_injected == 0 || sudt_injected == 0 {
+            return Err(Error::InjectAmountEqZero);
+        }
+
         if BigUint::from(ckb_injected)
             != (BigUint::from(sudt_injected) * (*ckb_reserve) / *sudt_reserve) + ONE
         {
@@ -195,6 +203,10 @@ fn mint_liquidity(
 
         sudt_injected = liquidity_order_data - decode_u128(&change_data[0..16])?;
         ckb_injected = (liquidity_order_cell.capacity().unpack() - SUDT_CAPACITY * 2) as u128;
+
+        if ckb_injected == 0 || sudt_injected == 0 {
+            return Err(Error::InjectAmountEqZero);
+        }
 
         if BigUint::from(sudt_injected)
             != (BigUint::from(ckb_injected) * (*sudt_reserve) / (*ckb_reserve)) + ONE
@@ -274,7 +286,7 @@ fn burn_liquidity(
     let min_sudt_got = BigUint::from(liquidity_lock_args.amount_1);
     let zero = BigUint::zero();
 
-    if min_ckb_got == zero || user_ckb_got < min_ckb_got {
+    if user_ckb_got < min_ckb_got {
         return Err(Error::InvalidMinCkbGot);
     }
 
